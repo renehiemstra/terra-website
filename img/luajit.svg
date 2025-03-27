@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 939.93 642.29">
+  <defs>
+    <style>
+      .cls-1 {
+        stroke-width: 0px;
+      }
+
+      .cls-1, .cls-2 {
+        fill: #4d4d4d;
+      }
+
+      .cls-3 {
+        fill: none;
+        stroke: url(#linear-gradient);
+        stroke-dasharray: 0 0 11.98 11.98;
+        stroke-miterlimit: 10;
+        stroke-width: 2px;
+      }
+
+      .cls-2 {
+        font-family: ArialMT, Arial;
+        font-size: 179.01px;
+      }
+
+      .cls-2, .cls-4 {
+        isolation: isolate;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="233.26" y1="255.04" x2="685.26" y2="255.04" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset=".05" stop-color="#e4e3e4"/>
+      <stop offset=".16" stop-color="#aaa8a9"/>
+      <stop offset=".28" stop-color="#797778"/>
+      <stop offset=".38" stop-color="#545151"/>
+      <stop offset=".48" stop-color="#393536"/>
+      <stop offset=".56" stop-color="#282425"/>
+      <stop offset="1" stop-color="#918f8f"/>
+    </linearGradient>
+  </defs>
+  <path class="cls-1" d="M459.26,75.04c-99.41,0-180,80.59-180,180s80.59,180,180,180,180-80.59,180-180-80.59-180-180-180ZM554.69,212.92c-17.77,0-32.17-14.41-32.17-32.18s14.41-32.17,32.17-32.17,32.17,14.41,32.17,32.17-14.41,32.18-32.17,32.18Z"/>
+  <g class="cls-4">
+    <g class="cls-4">
+      <text class="cls-2" transform="translate(203.51 616.78)"><tspan x="0" y="0">LuaJIT</tspan></text>
+    </g>
+  </g>
+  <circle class="cls-3" cx="459.26" cy="255.04" r="225"/>
+  <circle class="cls-1" cx="644.77" cy="112.5" r="32.17"/>
+</svg>
