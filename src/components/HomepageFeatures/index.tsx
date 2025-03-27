@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
 
+
 type FeatureItem = {
   title: string;
   Svg: React.ComponentType<React.ComponentProps<'svg'>>;
@@ -11,36 +12,78 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Easy to Use',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    title: 'Script with C-performance',
+    Svg: require('@site/static/img/luajit.svg').default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Simple and expressive statically typed compiled language built on top of the worlds fastest JIT-compiler.
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    title: 'Multistage programming',
+    Svg: require('@site/static/img/multistage.svg').default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        A low-level language meta-programmed by a high-level scripting language allows many behaviors that are not possible in other systems.
       </>
     ),
   },
   {
-    title: 'Powered by React',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    title: 'Backwards compatible with C',
+    Svg: require('@site/static/img/cpp4.svg').default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Interface directly with pre-existing C and Lua code without the need for wrappers or easily embed in a C / C++ project.
+      </>
+    ),
+  },
+  {
+    title: 'Scope-based resource management',
+    Svg: require('@site/static/img/RAII.svg').default,
+    description: (
+      <>
+        Versatile, efficient and safe resource management tied to object lifetime.
+      </>
+    ),
+  },
+  {
+    title: 'Ready for Exascale computing',
+    Svg: require('@site/static/img/frontier2.svg').default,
+    description: (
+      <>
+        Terra-Regent automatically discovers parallelism in shared-memory and distributed-memory programs composed of tasks, or functions.
+      </>
+    ),
+  },
+  {
+    title: 'Powerful standard library',
+    Svg: require('@site/static/img/std.svg').default,
+    description: (
+      <>
+        Concept-based multiple dispatch, smart allocators, multi-dimensional arrays, ranges, threads, unit-testing, package managing and more.
       </>
     ),
   },
 ];
+
+type FeatureItem2 = {
+    title: string;
+    Svg: React.ComponentType<React.ComponentProps<'png'>>;
+    description: ReactNode;
+  };
+
+const FeatureList2: FeatureItem2[] = [
+    {
+      title: 'Powerful libraries for HPC',
+      Svg: require('@site/static/img/fastlang.webp').default,
+      description: (
+        <>
+          Regent automatically discovers parallelism in shared-memory and distributed-memory programs composed of tasks, or functions.
+        </>
+      ),
+    },
+  ];
 
 function Feature({title, Svg, description}: FeatureItem) {
   return (

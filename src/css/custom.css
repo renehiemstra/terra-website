@@ -6,25 +6,215 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+    --ifm-font-family-monospace: 'Fira Code', 'JetBrains Mono', 'Source Code Pro', monospace;
+    --ifm-color-primary: #2a3641;
+    --ifm-code-font-size: 95%;
+    --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  }
+  
+  [data-theme='dark'] {
+    --ifm-font-family-monospace: 'Fira Code', 'JetBrains Mono', 'Source Code Pro', monospace;
+    --ifm-color-primary: #7495af;
+    --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  }
+
+/* Container for the code block (Light mode: Atom One Light) */
+.terra-code {
+    background-color: #fafafa; /* Light gray background */
+    color: #383a42;           /* Dark gray default text */
+    padding: 15px;
+    border-radius: 5px;
+    font-family: var(--ifm-font-family-monospace);
+    font-size: var(--ifm-code-font-size);
+    line-height: 1.5;
+    white-space: pre-wrap;
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
-[data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+/* Keywords (local, struct, do, end, etc.) */
+span.keyword {
+    color: #a626a4; /* Purple */
+}
+
+/* Function keywords (function) */
+span.keyword\.function {
+    color: #9758aa;
+    font-weight: bold;
+}
+
+/* Terra-specific keywords (terra) */
+span.keyword\.terra {
+    color: #4078f2; /* Blue */
+    font-weight: bold;
+}
+
+.keyword\.struct {
+    color: #9758aa;
+    font-weight: bold;
+}
+
+
+/* Return keyword */
+span.keyword\.return {
+    color: #986801; /* Brown/orange */
+}
+
+/* Repeat/Loop keywords (for, do, end) */
+.repeat {
+    color: #a626a4; /* Dark purple, matching keywords */
+    font-weight: bold;
+  }
+
+/* Conditionals (if, then, elseif, else, end) */
+.conditional {
+    color: #a626a4; /* Dark purple, matching keywords */
+    font-weight: bold;
+  }
+
+/* Unprocessed (variables, identifiers not otherwise tagged) */
+span.unprocessed {
+    color: #383a42; /* Dark gray */
+}
+
+/* Operators (=, +, &, etc.) */
+span.operator {
+    color: #383a42; /* Dark gray */
+}
+
+/* Logical operators (and) */
+span.keyword\.operator {
+    color: #a626a4; /* Purple */
+}
+
+/* Brackets ((), {}) */
+span.punctuation\.bracket {
+    color: #383a42; /* Dark gray */
+}
+
+/* Delimiters (:, ,, .) */
+span.punctuation\.delimiter {
+    color: #383a42; /* Dark gray */
+}
+
+/* Comments (-- ...) */
+span.comment {
+    color: #a0a1a7; /* Gray */
+    font-style: italic;
+}
+
+/* Numbers (0, 1, 10) */
+span.number {
+    color: #986801; /* Brown/orange */
+}
+
+/* Strings ("hello", etc.) */
+span.string, span.string\.escape {
+    color: #50a14f; /* Green */
+}
+
+/* Parameter names (x, y, z) */
+span.boolean, span.constant\.builtin {
+    color: #527ad6; /* Red */
+}
+
+
+/* Parameter names (x, y, z) */
+span.identifier\.name {
+    color: #e45649; /* Red */
+}
+
+/* Types (int, bool) */
+span.identifier\.type {
+    color: #c18401; /* Yellow-orange */
+}
+
+/* Terra-specific identifiers (terraFoo) */
+span.identifier\.terra {
+    color: #4078f2; /* Blue */
+}
+
+/* Dark mode: One Dark Pro */
+[data-theme='dark'] .terra-code {
+    background-color: #21252b; /* Darker gray */
+    color: #abb2bf;           /* Light gray */
+}
+
+[data-theme='dark'] span.keyword {
+    color: #c678dd; /* Magenta/purple */
+}
+
+  /* Repeat/Loop keywords (for, do, end) */
+  [data-theme='dark']  span.repeat {
+    color: #c678dd; /* Purple, matching keywords */
+    font-weight: bold;
+  }
+
+
+  /* Conditionals (if, then, elseif, else, end) */
+  [data-theme='dark'] span.conditional {
+    color: #c678dd; /* Dark purple, matching keywords */
+    font-weight: bold;
+  }
+
+[data-theme='dark'] span.keyword\.function {
+    color: #c678dd;
+    font-weight: bold;
+}
+
+[data-theme='dark'] span.keyword\.struct {
+    color: #c678dd;
+    font-weight: bold;
+}
+
+[data-theme='dark'] span.keyword\.terra {
+    color: #61afef;
+    font-weight: bold;
+}
+
+[data-theme='dark'] span.keyword\.return {
+    color: #d19a66;
+}
+
+[data-theme='dark'] span.unprocessed {
+    color: #abb2bf;
+}
+
+[data-theme='dark'] span.operator {
+    color: #d4d4d4;
+}
+
+[data-theme='dark'] span.keyword\.operator {
+    color: #c678dd;
+}
+
+[data-theme='dark'] span.punctuation\.bracket {
+    color: #abb2bf;
+}
+
+[data-theme='dark'] span.punctuation\.delimiter {
+    color: #abb2bf;
+}
+
+[data-theme='dark'] span.comment {
+    color: #5c6370;
+    font-style: italic;
+}
+
+[data-theme='dark'] span.number {
+    color: #d19a66;
+}
+
+[data-theme='dark'] span.string, span.string\.escape {
+    color: #98c379;
+}
+
+[data-theme='dark'] span.identifier\.name {
+    color: #e06c75;
+}
+
+[data-theme='dark'] span.identifier\.type {
+    color: #e5c07b;
+}
+
+[data-theme='dark'] span.identifier\.terra {
+    color: #61afef;
 }

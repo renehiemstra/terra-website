@@ -1,3 +1,22 @@
+renehiemstra:
+  name: Rene Hiemstra
+  title: Scientific researcher @ TU/e
+  url: https://github.com/yangshun
+  image_url: https://github.com/renehiemstra.png
+  page: true
+  socials:
+    github: renehiemstra
+
+
+tpkessler:
+  name: Torsten Kessler
+  title: Scientific researcher @ TU/e
+  url: https://github.com/tpkessler
+  image_url: https://github.com/tpkessler.png
+  page: true
+  socials:
+    github: rtpkessler
+
 yangshun:
   name: Yangshun Tay
   title: Front End Engineer @ Facebook

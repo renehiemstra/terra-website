@@ -1,0 +1,38 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="black" />
+  
+  <!-- Server rows -->
+  <g>
+    <!-- Row 1 -->
+    <rect x="100" y="100" width="80" height="300" fill="#0f0" rx="10" ry="10" />
+    <rect x="200" y="100" width="80" height="300" fill="#0f0" rx="10" ry="10" />
+    <rect x="300" y="100" width="80" height="300" fill="#0f0" rx="10" ry="10" />
+    
+    <!-- Row 2 -->
+    <rect x="400" y="100" width="80" height="300" fill="#0f0" rx="10" ry="10" />
+    <rect x="500" y="100" width="80" height="300" fill="#0f0" rx="10" ry="10" />
+    <rect x="600" y="100" width="80" height="300" fill="#0f0" rx="10" ry="10" />
+  </g>
+  
+  <!-- Glowing effect -->
+  <g filter="url(#glow)">
+    <rect x="100" y="100" width="80" height="300" fill="lime" />
+    <rect x="200" y="100" width="80" height="300" fill="lime" />
+    <rect x="300" y="100" width="80" height="300" fill="lime" />
+    <rect x="400" y="100" width="80" height="300" fill="lime" />
+    <rect x="500" y="100" width="80" height="300" fill="lime" />
+    <rect x="600" y="100" width="80" height="300" fill="lime" />
+  </g>
+  
+  <!-- Glow filter -->
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="10" result="coloredBlur" />
+      <feMerge>
+        <feMergeNode in="coloredBlur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+</svg>

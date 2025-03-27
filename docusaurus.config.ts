@@ -1,6 +1,7 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+import type { Configuration } from 'webpack';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -64,25 +65,77 @@ const config: Config = {
     ],
   ],
 
+  plugins: [
+    function webpackConfigPlugin() {
+      return {
+        name: 'custom-webpack-config',
+        configureWebpack(): Configuration {
+          return {
+            resolve: {
+              fallback: {
+                module: false, // Disable Node.js 'module'
+                fs: false, // Disable 'fs'
+                path: require.resolve('path-browserify'), // Polyfill 'path'
+                buffer: require.resolve('buffer/'), // Polyfill 'buffer'
+                process: require.resolve('process/browser.js'), // Use fully specified 'process/browser.js'
+              },
+            },
+            module: {
+              rules: [
+                {
+                  test: /\.wasm$/,
+                  type: 'asset/resource',
+                },
+              ],
+            },
+            plugins: [
+              new (require('webpack')).ProvidePlugin({
+                process: 'process/browser.js', // Use fully specified path here too
+                Buffer: ['buffer', 'Buffer'],
+              }),
+            ],
+          };
+        },
+      };
+    },
+  ],
+
   themeConfig: {
     // Replace with your project's social card
     image: 'img/docusaurus-social-card.jpg',
     navbar: {
-      title: 'My Site',
+      title: 'Home',
       logo: {
         alt: 'My Site Logo',
-        src: 'img/logo.svg',
+        src: 'img/terra-logo-light.svg',
       },
       items: [
+        { 
+            href: 'https://github.com/terralang/terra/releases', 
+            label: 'Download', 
+            position: 'left'
+        },
         {
-          type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
-          position: 'left',
-          label: 'Tutorial',
+            type: 'docSidebar',
+            sidebarId: 'tutorialSidebar',
+            position: 'left',
+            label: 'About',
+        },
+        {
+            type: 'docSidebar',
+            sidebarId: 'tutorialSidebar',
+            position: 'left',
+            label: 'Getting started',
+        },
+        {
+            type: 'docSidebar',
+            sidebarId: 'tutorialSidebar',
+            position: 'left',
+            label: 'Documentation',
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/facebook/docusaurus',
+          href: 'https://github.com/terralang/terra',
           label: 'GitHub',
           position: 'right',
         },
@@ -126,12 +179,12 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              href: 'https://github.com/terralang/terra',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Terralang.`,
     },
     prism: {
       theme: prismThemes.github,

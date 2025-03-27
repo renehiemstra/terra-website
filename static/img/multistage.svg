@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 939.93 642.29">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        stroke-width: 0px;
+      }
+
+      .cls-1, .cls-3 {
+        fill: #4d4d4d;
+      }
+
+      .cls-2, .cls-4 {
+        fill: #1c75bc;
+      }
+
+      .cls-3 {
+        font-size: 198.9px;
+      }
+
+      .cls-3, .cls-4 {
+        font-family: ArialMT, Arial;
+      }
+
+      .cls-3, .cls-4, .cls-5 {
+        isolation: isolate;
+      }
+
+      .cls-4 {
+        font-size: 110.5px;
+      }
+    </style>
+  </defs>
+  <g>
+    <path class="cls-2" d="M469.04,156.53c1.93,1.8,1.65,1.55,3.62,3.35l2.25,2.05c32.72-18.58,70.57-29.18,110.9-29.18,114.98,0,209.8,86.22,223.33,197.55h0c17.45,3.9,34.45,7.15,50.85,9.85.5-3.27.95-6.57,1.3-9.87.9-8.15,1.37-16.4,1.37-24.8,0-124.27-100.73-225-225-225-67.15,0-127.4,29.4-168.62,76.05h0Z"/>
+    <path class="cls-1" d="M764.14,546.41c28.97,5.48,57.53,10.6,85.6,15.4-74.7-187.35-269.63-302.1-441.1-307.05-164.62-4.75-282.82,92.43-308.58,114.65,8,2.78,12.05,4.17,20.15,6.93l4.03,1.38c69.92-44.72,153.02-70.65,242.17-70.65,170.87,0,321.53,99.07,397.73,239.35"/>
+  </g>
+  <g class="cls-5">
+    <g class="cls-5">
+      <g class="cls-5">
+        <text class="cls-3" transform="translate(37.92 588.23)"><tspan x="0" y="0">TERRA</tspan></text>
+      </g>
+    </g>
+  </g>
+  <g class="cls-5">
+    <g class="cls-5">
+      <g class="cls-5">
+        <text class="cls-4" transform="translate(522.39 262.1)"><tspan x="0" y="0">LUA</tspan></text>
+      </g>
+    </g>
+  </g>
+</svg>
