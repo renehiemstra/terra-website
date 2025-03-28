@@ -12,7 +12,7 @@ async function initParser(): Promise<Parser> {
             await Parser.init();
             const terraParser = new Parser();
             const wasmPath = process.env.NODE_ENV === 'production' 
-                ? '/wasm/tree-sitter-terra.wasm' // Adjust for production baseUrl
+                ? '/terra-website/wasm/tree-sitter-terra.wasm' // Adjust for production baseUrl
                 : '/terra-website/wasm/tree-sitter-terra.wasm'; // Development path
             const terraLanguage = await Language.load(wasmPath);
             terraParser.setLanguage(terraLanguage);
@@ -36,7 +36,7 @@ async function loadQuery(parser: Parser): Promise<Query> {
 
     cachedQueryPromise = (async () => {
         const scmPath = process.env.NODE_ENV === 'production'
-            ? '/scm/highlights.scm' // Production path
+            ? '/terra-website/scm/highlights.scm' // Production path
             : '/terra-website/scm/highlights.scm'; // Development path
         const response = await fetch(scmPath);
         if (!response.ok) throw new Error(`Failed to fetch highlights.scm: ${response.statusText}`);
