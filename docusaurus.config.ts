@@ -6,8 +6,8 @@ import type { Configuration } from 'webpack';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'My Site',
-  tagline: 'Dinosaurs are cool',
+  title: 'The Terra Programming Language',
+  tagline: 'The best code is code that you don\'t have to write',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
