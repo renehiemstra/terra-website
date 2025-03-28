@@ -5,6 +5,17 @@ const sidebars: SidebarsConfig = {
   tutorialSidebar: [
     'intro',
     {
+      type: 'category',
+      label: 'Introduction into metaprogramming',
+      link: {
+        type: 'doc',
+        id: 'introduction-metaprogramming/intro',
+      },
+      items: [
+        'introduction-metaprogramming/hello-world',
+      ],
+    },
+    {
         type: 'category',
         label: 'Resource management',
         link: {
