@@ -1,5 +1,4 @@
-# First metaproramming example
-
+# A first example
 We begin with metaprogramming in `terra` by reproducing the `C` example from
 the introduction:
 ```terra

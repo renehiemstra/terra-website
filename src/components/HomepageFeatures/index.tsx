@@ -1,13 +1,14 @@
 import type {ReactNode} from 'react';
 import clsx from 'clsx';
 import Heading from '@theme/Heading';
+import Link from '@docusaurus/Link';
 import styles from './styles.module.css';
-
 
 type FeatureItem = {
   title: string;
   Svg: React.ComponentType<React.ComponentProps<'svg'>>;
   description: ReactNode;
+  to: string;
 };
 
 const FeatureList: FeatureItem[] = [
@@ -19,6 +20,7 @@ const FeatureList: FeatureItem[] = [
         Simple and expressive statically typed compiled language built on top of the worlds fastest JIT-compiler.
       </>
     ),
+    to: '/docs/features/script-with-c-performance',
   },
   {
     title: 'Multistage programming',
@@ -28,7 +30,9 @@ const FeatureList: FeatureItem[] = [
         A low-level language meta-programmed by a high-level scripting language allows many behaviors that are not possible in other systems.
       </>
     ),
+    to: '/docs/features/multistage-programming',
   },
+  // Note: You've got multistage-programming repeated below - you'll want unique paths:
   {
     title: 'Backwards compatible with C',
     Svg: require('@site/static/img/cpp4.svg').default,
@@ -37,6 +41,7 @@ const FeatureList: FeatureItem[] = [
         Interface directly with pre-existing C and Lua code without the need for wrappers or easily embed in a C / C++ project.
       </>
     ),
+    to: '/docs/features/backwards-compatible-with-c',  // Fixed path
   },
   {
     title: 'Scope-based resource management',
@@ -46,6 +51,7 @@ const FeatureList: FeatureItem[] = [
         Versatile, efficient and safe resource management tied to object lifetime.
       </>
     ),
+    to: '/docs/features/scope-based-resource-management',  // Fixed path
   },
   {
     title: 'Ready for Exascale computing',
@@ -55,6 +61,7 @@ const FeatureList: FeatureItem[] = [
         Terra-Regent automatically discovers parallelism in shared-memory and distributed-memory programs composed of tasks, or functions.
       </>
     ),
+    to: '/docs/features/exascale-computing',  // Fixed path
   },
   {
     title: 'Powerful standard library',
@@ -64,37 +71,23 @@ const FeatureList: FeatureItem[] = [
         Concept-based multiple dispatch, smart allocators, multi-dimensional arrays, ranges, threads, unit-testing, package managing and more.
       </>
     ),
+    to: '/docs/features/powerful-standard-library',  // Fixed path
   },
 ];
 
-type FeatureItem2 = {
-    title: string;
-    Svg: React.ComponentType<React.ComponentProps<'png'>>;
-    description: ReactNode;
-  };
-
-const FeatureList2: FeatureItem2[] = [
-    {
-      title: 'Powerful libraries for HPC',
-      Svg: require('@site/static/img/fastlang.webp').default,
-      description: (
-        <>
-          Regent automatically discovers parallelism in shared-memory and distributed-memory programs composed of tasks, or functions.
-        </>
-      ),
-    },
-  ];
-
-function Feature({title, Svg, description}: FeatureItem) {
+// Fixed Feature component to use the 'to' prop and Link
+function Feature({title, Svg, description, to}: FeatureItem) {
   return (
     <div className={clsx('col col--4')}>
-      <div className="text--center">
-        <Svg className={styles.featureSvg} role="img" />
-      </div>
-      <div className="text--center padding-horiz--md">
-        <Heading as="h3">{title}</Heading>
-        <p>{description}</p>
-      </div>
+      <Link to={to} className={styles.featureLink}>
+        <div className="text--center">
+          <Svg className={styles.featureSvg} role="img" />
+        </div>
+        <div className="text--center padding-horiz--md">
+          <Heading as="h3">{title}</Heading>
+          <p>{description}</p>
+        </div>
+      </Link>
     </div>
   );
 }

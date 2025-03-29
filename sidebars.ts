@@ -3,16 +3,20 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 const sidebars: SidebarsConfig = {
 
   tutorialSidebar: [
-    'intro',
+    {
+        type: 'doc',
+        label: 'Getting started',
+        id: 'getting-started',    
+    },
     {
       type: 'category',
-      label: 'Introduction into metaprogramming',
+      label: 'Metaprogramming',
       link: {
         type: 'doc',
-        id: 'introduction-metaprogramming/intro',
+        id: 'metaprogramming/intro',
       },
       items: [
-        'introduction-metaprogramming/hello-world',
+        'metaprogramming/hello-world',
       ],
     },
     {
