@@ -6,7 +6,7 @@ local MSG = "Hello, World!"
 local C = terralib.includec("stdio.h")
 
 terra main()
-  C.printf(MSG .. "\n")
+  C.printf([MSG .. "\n"])
   return 0
 end
 main()
