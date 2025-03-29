@@ -5,7 +5,7 @@ title: Script with C-performance
 
 # Script with C-performance
 
-Terra is a simple and expressive statically typed compiled language built on top of LuaJIT, the world's fastest JIT-compiler. This unique combination allows Terra to deliver performance comparable to C while maintaining the flexibility and ease of a scripting language.
+Terra is a simple and expressive statically typed compiled language built on top of LuaJIT, the fastest JIT-compiler in the West. This unique combination allows Terra to deliver performance comparable to C while maintaining the flexibility and ease of a scripting language.
 
 ## High Performance via LuaJIT
 

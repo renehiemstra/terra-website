@@ -5,6 +5,8 @@ title: Multistage programming
 
 import { CodeColumns, CodeColumn } from '../../src/components/CodeColumns';
 
+
+# Multistage programming
 __Terra__ is a low-level system programming language that is embedded in and meta-programmed by the __Lua__ programming language:
 ```terra
 --This top-level code is plain Lua code.
@@ -59,14 +61,14 @@ The combination of a low-level language meta-programmed by a high-level scriptin
 
 Features of other languages such as conditional compilation and templating simply fall out of the combination of using Lua to meta-program Terra:
 <CodeColumns>
-  <CodeColumn>
+  <CodeColumn title="Terra">
     ```terra
     terra add(a : int,b : int) : int
         return a + b
     end
     ```
   </CodeColumn> 
-  <CodeColumn> 
+  <CodeColumn title="C++"> 
     ```cpp
     int add(int a, int b) {
         return a + b;
@@ -74,7 +76,7 @@ Features of other languages such as conditional compilation and templating simpl
     ``` 
   </CodeColumn> 
 </CodeColumns>
-
+Conditional compilation is done with control-flow that determines what code is defined.
 <CodeColumns>
   <CodeColumn>
     ```terra
@@ -99,7 +101,7 @@ Features of other languages such as conditional compilation and templating simpl
     ``` 
   </CodeColumn> 
 </CodeColumns>
-
+Templates become Lua functions that take a terra type T and use it to generate new types and code.
 <CodeColumns>
   <CodeColumn>
     ```terra
@@ -134,3 +136,20 @@ Features of other languages such as conditional compilation and templating simpl
     ``` 
   </CodeColumn> 
 </CodeColumns>
+
+# What's special about Terra?
+Terra is a statically-typed, compiled language that interoperates seamlessly with Lua. In this setup, Lua acts as the high-level meta-programming layer, while Terra handles the low-level, performance-critical code. The two languages share a lexical environment, meaning Terra code is written within Lua programs, and Lua can dynamically generate and manipulate Terra code at runtime. You can use Terra and Lua in the followind way ...
+
+## An embedded JIT-compiler for building languages
+We use techniques from [multi-stage programming](https://en.wikipedia.org/wiki/Multi-stage_programming) to make it possible to  [meta-program](# Generative Programming) Terra using Lua.  Terra expressions, types, and functions are all first-class Lua values, making it possible to generate arbitrary programs at runtime. This allows you to [compile domain-specific languages](#compiling-a-language) (DSLs) written in Lua into high-performance Terra code. Furthermore, since Terra is built on the Lua ecosystem, it is easy to [embed](#embedding-and-interoperability) Terra-Lua programs in other software as a library. This design allows you to add a JIT-compiler into your existing software. You can use it to add a JIT-compiled DSL to your application, or to auto-tune high-performance code dynamically.
+
+## A scripting-language with high-performance extensions 
+While the performance of Lua and other dynamic languages is always getting better, a low-level of abstraction gives you predictable control of performance when you need it. Terra programs use the same LLVM backend that Apple uses for its C compilers. This means that Terra code performs similarly to equivalent C code. Terra also includes built-in support for SIMD operations, and other low-level features like non-temporal writes and prefetches. You can use Lua to organize and configure your application, and then call into Terra code when you need controllable performance.
+
+## A stand-alone low-level language 
+Terra was designed so that it can run independently from Lua. In fact, if your final program doesn't need Lua, you can save Terra code into a .o file or executable. In addition to ensuring a clean separation between high- and low-level code, this design lets you use Terra as a stand-alone low-level language. In this use-case, Lua serves as a powerful meta-programming language.  Here it serves as a replacement for C++ template metaprogramming[<sup>3</sup>](#footnote3) or C preprocessor X-Macros[<sup>4</sup>](#footnote4) with better syntax and nicer properties such as hygiene[<sup>5</sup>](#footnote5). Since Terra exists *only* as code embedded in a Lua meta-program, features that are normally built into low-level languages can be implemented as Lua libraries. This design keeps the core of Terra simple, while enabling powerful behavior such as conditional compilation, namespaces, templating, and even **class systems** **[implemented as libraries](#simplicity)**.
+
+For more information about using Terra, see the **[getting started guide](getting-started.html)** and **[API reference](api.html)**. Our **[publications](publications.html)** provide a more in-depth look at its design. 
+
+
+# Generative Programming
