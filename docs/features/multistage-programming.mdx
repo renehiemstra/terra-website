@@ -5,7 +5,6 @@ title: Multistage programming
 
 import { CodeColumns, CodeColumn } from '../../src/components/CodeColumns';
 
-
 # Multistage programming
 __Terra__ is a low-level system programming language that is embedded in and meta-programmed by the __Lua__ programming language:
 ```terra
@@ -60,6 +59,7 @@ In Terra, we just gave in to the trend of making the meta-language of C/C++ more
 The combination of a low-level language meta-programmed by a high-level scripting language allows many behaviors that are not possible in other systems. Unlike C/C++, Terra code can be JIT-compiled and run interleaved with Lua evaluation, making it easy to write software libraries that depend on runtime code generation. 
 
 Features of other languages such as conditional compilation and templating simply fall out of the combination of using Lua to meta-program Terra:
+
 <CodeColumns>
   <CodeColumn title="Terra">
     ```terra

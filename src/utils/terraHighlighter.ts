@@ -53,28 +53,30 @@ async function loadQuery(parser: Parser): Promise<Query> {
 
 function escapeHtml(text: string): string {
     return text
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, '')
-        .replace(/\n/g, '\n');
+    .replace(/&/g, '&amp;') // Fixed: Proper HTML entities
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/\n/g, '<br>'); // Preserve newlines as-is
 }
 
 type HighlightedHtml = string;
 
 export async function highlightTerraCode(code: string, isInline: boolean = false): Promise<HighlightedHtml> {
+    const trimmedCode = code.replace(/\n+$/, '');
+    console.log('Trimmed Terra code:', JSON.stringify(trimmedCode)); // Debug: Check for \n
     try {
         const terraParser = await initParser();
         const query = await loadQuery(terraParser);
-        const tree = terraParser.parse(code);
+        const tree = terraParser.parse(trimmedCode);
         if (!tree) throw new Error('Failed to parse code');
         
         const html = await treeToHtml(tree, query);
         return isInline ? html : `<pre class="terra-code"><code>${html}</code></pre>`;
     } catch (error) {
         console.error(`Highlighting failed: ${error instanceof Error ? error.message : String(error)}`);
-        return escapeHtml(code);
+        return escapeHtml(trimmedCode);
     }
 }
 
@@ -108,7 +110,8 @@ async function treeToHtml(tree: Tree, query: Query): Promise<string> {
         html += escapeHtml(tree.rootNode.text.substring(lastEnd));
     }
 
-    return html;
+    // Split into lines and use <br> correctly
+    return html
 }
 
 class LeafNodeIterator implements IterableIterator<any> {

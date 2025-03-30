@@ -5,29 +5,107 @@
  */
 
 /* You can override the default Infima variables here. */
+
+With Terra now at 188.87px and C++ at 187.5px for 7 lines, we’re dealing with a new difference of 1.37px—Terra is slightly taller again. This flip-flopping (Terra was 186.24px before, now 188.87px) suggests we’re close, but subtle rendering or CSS interactions are still at play. Your report of line-height as 18.5px last time didn’t match either height, so let’s verify the current computed values and lock both at 187.5px.
+
+Current State
+Terra: 188.87px.
+HTML: <pre class="terra-code"><code>line <span class="number">1</span><br>...</code></pre>.
+C++: 187.5px.
+HTML: <div class="codeBlockContainer_*"><pre class="language-cpp"><code><span class="token-line">...</span><br>...</code></pre>...</div>.
+Expected Height
+7 lines × 22.5px + 30px padding = 187.5px.
+Breakdown
+Terra: 188.87px - 30px padding = 158.87px content.
+Per line: 158.87px ÷ 7 ≈ 22.70px (slightly over 22.5px).
+C++: 187.5px - 30px padding = 157.5px content.
+Per line: 157.5px ÷ 7 = 22.5px (exact).
+The 1.37px (~0.2px per line) suggests:
+
+Line-Height: Terra’s effective line-height is ~22.7px despite being set to 22.5px, possibly due to rendering or inheritance quirks with <br>.
+Padding/Margin: A tiny extra spacing in Terra’s <pre>.
+Why This Happened
+Last Change: Adding line-height: 22.5px !important to .terra-code code moved Terra from 186.24px (~22.32px per line) to 188.87px (~22.7px per line), overshooting 187.5px.
+Previous 18.5px: That might have been a misread (e.g., from a <span>), as neither height matched 7 × 18.5px + 30px (159.5px).
+Rendering: <br> in Terra’s <pre><code> might add a fractional pixel more than C++’s <span><br>.
+Fix: Lock Both at 187.5px
+Let’s ensure line-height is exactly 22.5px and eliminate any extra spacing.
+
+Updated custom.css
+css
+
+Collapse
+
+Wrap
+
+Copy
 :root {
     --ifm-font-family-monospace: 'Fira Code', 'JetBrains Mono', 'Source Code Pro', monospace;
     --ifm-color-primary: #2a3641;
-    --ifm-code-font-size: 95%;
+    --ifm-code-font-size: 15px;
     --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
-  }
-  
-  [data-theme='dark'] {
+    --ifm-codeblock-background: #fafafa;
+}
+
+[data-theme='dark'] {
     --ifm-font-family-monospace: 'Fira Code', 'JetBrains Mono', 'Source Code Pro', monospace;
     --ifm-color-primary: #7495af;
     --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
-  }
+    --ifm-codeblock-background: #2d2d2d;
+}
 
-/* Container for the code block (Light mode: Atom One Light) */
-.terra-code {
-    background-color: #fafafa; /* Light gray background */
-    color: #383a42;           /* Dark gray default text */
-    padding: 15px;
+div[class*="codeBlockContainer"] {
+    background-color: var(--ifm-codeblock-background) !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+}
+
+div[class*="codeBlockContent"] {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+pre.language-cpp {
+    background-color: var(--ifm-codeblock-background) !important;
+    padding: 15px !important;
     border-radius: 5px;
-    font-family: var(--ifm-font-family-monospace);
-    font-size: var(--ifm-code-font-size);
-    line-height: 1.5;
+    margin: 0 !important;
+}
+
+div[class*="codeBlockContainer"] pre.language-cpp code {
+    background-color: transparent !important;
+    color: #383a42;
+    font-family: 'Fira Code', monospace !important;
+    font-size: var(--ifm-code-font-size) !important;
+    padding: 0 !important;
     white-space: pre-wrap;
+    line-height: 22.5px !important;
+    margin: 0 !important; /* Ensure no extra spacing */
+}
+
+.terra-code {
+    background-color: var(--ifm-codeblock-background) !important;
+    color: #383a42;
+    padding: 15px !important;
+    border-radius: 5px;
+    margin: 0 !important;
+}
+
+.terra-code code {
+    background-color: transparent !important;
+    font-family: 'Fira Code', monospace !important;
+    font-size: var(--ifm-code-font-size) !important;
+    padding: 0 !important;
+    line-height: 22.5px !important;
+    margin: 0 !important; /* Ensure no extra spacing */
+}
+
+div[class*="buttonGroup"] {
+    position: absolute !important;
+    bottom: 0;
+    right: 0;
 }
 
 /* Keywords (local, struct, do, end, etc.) */
