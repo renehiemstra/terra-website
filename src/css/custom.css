@@ -6,39 +6,6 @@
 
 /* You can override the default Infima variables here. */
 
-With Terra now at 188.87px and C++ at 187.5px for 7 lines, we’re dealing with a new difference of 1.37px—Terra is slightly taller again. This flip-flopping (Terra was 186.24px before, now 188.87px) suggests we’re close, but subtle rendering or CSS interactions are still at play. Your report of line-height as 18.5px last time didn’t match either height, so let’s verify the current computed values and lock both at 187.5px.
-
-Current State
-Terra: 188.87px.
-HTML: <pre class="terra-code"><code>line <span class="number">1</span><br>...</code></pre>.
-C++: 187.5px.
-HTML: <div class="codeBlockContainer_*"><pre class="language-cpp"><code><span class="token-line">...</span><br>...</code></pre>...</div>.
-Expected Height
-7 lines × 22.5px + 30px padding = 187.5px.
-Breakdown
-Terra: 188.87px - 30px padding = 158.87px content.
-Per line: 158.87px ÷ 7 ≈ 22.70px (slightly over 22.5px).
-C++: 187.5px - 30px padding = 157.5px content.
-Per line: 157.5px ÷ 7 = 22.5px (exact).
-The 1.37px (~0.2px per line) suggests:
-
-Line-Height: Terra’s effective line-height is ~22.7px despite being set to 22.5px, possibly due to rendering or inheritance quirks with <br>.
-Padding/Margin: A tiny extra spacing in Terra’s <pre>.
-Why This Happened
-Last Change: Adding line-height: 22.5px !important to .terra-code code moved Terra from 186.24px (~22.32px per line) to 188.87px (~22.7px per line), overshooting 187.5px.
-Previous 18.5px: That might have been a misread (e.g., from a <span>), as neither height matched 7 × 18.5px + 30px (159.5px).
-Rendering: <br> in Terra’s <pre><code> might add a fractional pixel more than C++’s <span><br>.
-Fix: Lock Both at 187.5px
-Let’s ensure line-height is exactly 22.5px and eliminate any extra spacing.
-
-Updated custom.css
-css
-
-Collapse
-
-Wrap
-
-Copy
 :root {
     --ifm-font-family-monospace: 'Fira Code', 'JetBrains Mono', 'Source Code Pro', monospace;
     --ifm-color-primary: #2a3641;
@@ -54,52 +21,84 @@ Copy
     --ifm-codeblock-background: #2d2d2d;
 }
 
-div[class*="codeBlockContainer"] {
-    background-color: var(--ifm-codeblock-background) !important;
-    padding: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-}
-
-div[class*="codeBlockContent"] {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
 pre.language-cpp {
     background-color: var(--ifm-codeblock-background) !important;
-    padding: 15px !important;
-    border-radius: 5px;
+    padding: 0px !important;
+    border-radius: 20px  !important;
     margin: 0 !important;
 }
 
-div[class*="codeBlockContainer"] pre.language-cpp code {
+pre.language-cpp code {
     background-color: transparent !important;
     color: #383a42;
     font-family: 'Fira Code', monospace !important;
     font-size: var(--ifm-code-font-size) !important;
-    padding: 0 !important;
     white-space: pre-wrap;
-    line-height: 22.5px !important;
-    margin: 0 !important; /* Ensure no extra spacing */
-}
-
-.terra-code {
-    background-color: var(--ifm-codeblock-background) !important;
-    color: #383a42;
-    padding: 15px !important;
-    border-radius: 5px;
+    line-height: 22.5px;
     margin: 0 !important;
 }
 
-.terra-code code {
+pre.language-terra {
+    background-color: var(--ifm-codeblock-background) !important;
+    padding: 15px !important;
+    border-radius: 10px !important;
+    padding: 0;
+    margin: 0 !important;
+}
+
+pre.language-terra code {
     background-color: transparent !important;
     font-family: 'Fira Code', monospace !important;
     font-size: var(--ifm-code-font-size) !important;
-    padding: 0 !important;
-    line-height: 22.5px !important;
-    margin: 0 !important; /* Ensure no extra spacing */
+    padding: 0;
+    white-space: pre-wrap;
+    line-height: 22.5px;
+    margin: 0 !important;
+}
+
+.terra-copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s ease-in-out;
+}
+
+.terra-code-container:hover .terra-copy-btn {
+    opacity: 1; /* Show on hover */
+}
+
+.terra-copy-btn .copy-icon {
+    width: 18px;
+    height: 18px;
+    fill: #383a42; /* Light theme */
+}
+
+.terra-copy-btn .copied-icon {
+    width: 18px;
+    height: 18px;
+    fill: #50a14f; /* Green for "Copied" */
+    display: none;
+}
+
+.terra-copy-btn.copied .copy-icon {
+    display: none;
+}
+
+.terra-copy-btn.copied .copied-icon {
+    display: inline;
+}
+
+[data-theme='dark'] .terra-copy-btn .copy-icon {
+    fill: #abb2bf; /* Dark theme */
+}
+
+[data-theme='dark'] .terra-copy-btn .copied-icon {
+    fill: #98c379; /* Green for dark mode */
 }
 
 div[class*="buttonGroup"] {

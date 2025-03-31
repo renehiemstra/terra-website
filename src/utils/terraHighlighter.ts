@@ -71,9 +71,9 @@ export async function highlightTerraCode(code: string, isInline: boolean = false
         const query = await loadQuery(terraParser);
         const tree = terraParser.parse(trimmedCode);
         if (!tree) throw new Error('Failed to parse code');
-        
         const html = await treeToHtml(tree, query);
-        return isInline ? html : `<pre class="terra-code"><code>${html}</code></pre>`;
+        console.log('highlightTerraCode output:', html); // Debug
+        return html
     } catch (error) {
         console.error(`Highlighting failed: ${error instanceof Error ? error.message : String(error)}`);
         return escapeHtml(trimmedCode);
