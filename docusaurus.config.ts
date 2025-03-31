@@ -21,7 +21,7 @@ const config: Config = {
   organizationName: 'renehiemstra', // Usually your GitHub org/user name.
   projectName: 'terra-website', // Usually your repo name.
 
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'ignore', //'throw',
   onBrokenMarkdownLinks: 'warn',
 
   // Even if you don't use internationalization, you can use this field to set

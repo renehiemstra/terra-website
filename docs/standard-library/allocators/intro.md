@@ -1,0 +1,12 @@
+# Allocators in Terra
+Allocators empower users with fine-grained control over the memory management of individual objects. By selecting an appropriate allocation strategy, users can dictate the memory source—such as stack, heap, or shared memory—tailoring it to specific needs. For instance, short-lived temporary objects can leverage fast, fixed-size stack allocations, while long-running processes can benefit from strategies that minimize fragmentation. Moreover, allocators enhance performance by improving locality of reference, colocating related objects in memory to optimize access patterns.
+
+In Terra, we've designed an allocator system that prioritizes simplicity, extensibility, composability, and integration with the language's low-level capabilities, while avoiding the pitfalls of overly complex or rigid designs seen in other languages like C++. We also make it really easy to implement your own allocator.
+
+Here we outline the design of the allocator class, a lightweight yet powerful abstraction that empowers developers to manage memory efficiently in Terra.
+
+## Design of allocators in terra
+The overall design is based on the following key ideas:
+* A container’s `new` method (or any factory function producing a container object) accepts an allocator by reference as an opaque object conforming to the allocator interface. This approach decouples the allocator type from the container type, eliminating the need for a template parameter to support generic allocators. This addresses a notable limitation in the C++ Standard Library, where the allocator template parameter must be specified for every container method—a cumbersome requirement. For further insight into this challenge, refer to the BDE allocator model. [BDE allocator model](https://github.com/bloomberg/bde/wiki/BDE-Allocator-Model).
+* An abstraction of a memory block that has a notion of its allocator and a notion of its size. It can therefore 'free' its own resource when it runs out of scope or it can ask for additional resources when the current resource is too small. All is packed in an economical, single-function interface, ispired by 'lua_Alloc'. See also the [allocator API for C](https://nullprogram.com/blog/2023/12/17/).
+* Every allocator has an 'owns' method, which enables composable allocators (see Andrei Alexandrescu's talk on [composable allocators in C++](https://www.youtube.com/watch?v=LIb3L4vKZ7U&t=21s)).

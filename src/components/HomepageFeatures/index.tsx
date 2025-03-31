@@ -17,7 +17,7 @@ const FeatureList: FeatureItem[] = [
     Svg: require('@site/static/img/luajit.svg').default,
     description: (
       <>
-        Simple and expressive statically typed compiled language built on top of the worlds fastest JIT-compiler.
+        Simple and expressive statically typed compiled language built on top of the fastest JIT-compiler in the West.
       </>
     ),
     to: '/docs/features/script-with-c-performance',
@@ -44,14 +44,14 @@ const FeatureList: FeatureItem[] = [
     to: '/docs/features/backwards-compatible-with-c',  // Fixed path
   },
   {
-    title: 'Scope-based resource management',
-    Svg: require('@site/static/img/RAII.svg').default,
+    title: 'Build your own DSL',
+    Svg: require('@site/static/img/DSL.svg').default,
     description: (
       <>
-        Versatile, efficient and safe resource management tied to object lifetime.
+        Craft your own domain-specific-language with tailored syntax, abstractions, and tools that make coding faster, more intuitive, and less error-prone.
       </>
     ),
-    to: '/docs/features/scope-based-resource-management',  // Fixed path
+    to: '/docs/features/domain-specific-languages',  // Fixed path
   },
   {
     title: 'Ready for Exascale computing',
