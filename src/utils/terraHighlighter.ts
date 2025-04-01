@@ -11,10 +11,7 @@ async function initParser(): Promise<Parser> {
         try {
             await Parser.init();
             const terraParser = new Parser();
-            const wasmPath = process.env.NODE_ENV === 'production' 
-                ? '/terra-website/wasm/tree-sitter-terra.wasm' // Adjust for production baseUrl
-                : '/terra-website/wasm/tree-sitter-terra.wasm'; // Development path
-            const terraLanguage = await Language.load(wasmPath);
+            const terraLanguage = await Language.load('/terra-website/wasm/tree-sitter-exoterra.wasm');
             terraParser.setLanguage(terraLanguage);
             parser = terraParser;
             return terraParser;
@@ -70,6 +67,7 @@ export async function highlightTerraCode(code: string, isInline: boolean = false
         const terraParser = await initParser();
         const query = await loadQuery(terraParser);
         const tree = terraParser.parse(trimmedCode);
+        console.log("parse-tree", tree.rootNode.toString());
         if (!tree) throw new Error('Failed to parse code');
         const html = await treeToHtml(tree, query);
         console.log('highlightTerraCode output:', html); // Debug

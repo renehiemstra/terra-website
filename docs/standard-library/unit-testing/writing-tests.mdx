@@ -1,0 +1,24 @@
+# Writing and evaluating tests
+Tests may combine both lua and terra code. For example, the following code directly evaluates a lua statement
+```terra
+local a = 1
+local b = 2
+test a+1==b
+```
+and the following snippet involves a terra function
+```terra
+terra foo(a : int)
+  return a+1
+end
+test f(1)==2
+test f(2)==4
+```
+If a test fails then the linenumber and filename of the test statement is printed for convenience. For example, the above code returns
+
+<pre>
+<div class="test-passed">  test passed</div>
+<div class="test-passed">  test passed</div>
+<div class="test-failed">  test failed in test.t, linenumber 11</div>
+</pre>
+
+`test` always expects a boolean result.

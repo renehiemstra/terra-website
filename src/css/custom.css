@@ -53,6 +53,15 @@
     --ifm-codeblock-background: #2d2d2d;
 }
 
+.test-passed {
+    color: green;
+    font-weight: bold;
+}
+.test-failed {
+    color: red;
+    font-weight: bold;
+}
+
 pre.language-cpp {
     background-color: var(--ifm-codeblock-background) !important;
     padding: 0px !important;
@@ -151,7 +160,7 @@ span.keyword\.function {
 }
 
 /* Terra-specific keywords (terra) */
-span.keyword\.terra {
+span.keyword\.terra, .test, .terracode {
     color: #4078f2; /* Blue */
     font-weight: bold;
 }
@@ -160,7 +169,6 @@ span.keyword\.terra {
     color: #9758aa;
     font-weight: bold;
 }
-
 
 /* Return keyword */
 span.keyword\.return {
@@ -174,10 +182,10 @@ span.keyword\.return {
   }
 
 /* Conditionals (if, then, elseif, else, end) */
-.conditional {
+.conditional, .testenv, .testset {
     color: #a626a4; /* Dark purple, matching keywords */
     font-weight: bold;
-  }
+}
 
 /* Unprocessed (variables, identifiers not otherwise tagged) */
 span.unprocessed {

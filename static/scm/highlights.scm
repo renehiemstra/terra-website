@@ -104,6 +104,32 @@
   "end"
 ] @repeat)
 
+
+(test_statement
+[
+    "test"
+] @test)
+
+(terracode_statement
+[
+  "terracode"
+  "end"
+] @terracode)
+
+(testenv_statement
+[
+  "testenv"
+  "do"
+  "end"
+] @testenv)
+
+(testset_statement
+[
+  "testset"
+  "do"
+  "end"
+] @testset)
+
 (repeat_statement
 [
   "repeat"

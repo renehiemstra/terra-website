@@ -115,6 +115,11 @@ const sidebars: SidebarsConfig = {
             id: 'standard-library/unit-testing/intro',
             },
             items: [
+                'standard-library/unit-testing/writing-tests',
+                'standard-library/unit-testing/organizing-tests-testenv',
+                'standard-library/unit-testing/organizing-tests-testset',
+                'standard-library/unit-testing/parameterized-tests',
+                'standard-library/unit-testing/parallel-test-suites',
             ],
         },
         {
