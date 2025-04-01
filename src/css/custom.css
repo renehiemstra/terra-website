@@ -6,6 +6,21 @@
 
 /* You can override the default Infima variables here. */
 
+/* Prevent word breaking in the navbar title */
+.navbar__title {
+    white-space: nowrap; /* Keeps the title on a single line */
+}
+
+/* Ensure the navbar adjusts responsibly on small screens */
+@media (max-width: 996px) { /* Docusaurus mobile breakpoint */
+    .navbar__title {
+        font-size: 1.2rem; /* Slightly reduce size on mobile if needed */
+        white-space: nowrap; /* Maintain no-break behavior */
+        overflow: hidden; /* Prevent overflow issues */
+        text-overflow: ellipsis; /* Add ellipsis if too long */
+    }
+}
+
 :root {
     --ifm-font-family-monospace: 'Fira Code', 'JetBrains Mono', 'Source Code Pro', monospace;
     --ifm-color-primary: #2a3641;
