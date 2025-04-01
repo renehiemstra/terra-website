@@ -7,7 +7,7 @@ import type { Configuration } from 'webpack';
 
 const config: Config = {
   title: 'The Terra Programming Language',
-  tagline: 'Multistage Programming',
+  tagline: 'Multistage Systems Programming',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here

@@ -51,7 +51,10 @@ const sidebars: SidebarsConfig = {
             id: 'standard-library/allocators/intro',
             },
             items: [
-                'standard-library/allocators/design'
+                'standard-library/allocators/design',
+                'standard-library/allocators/memory-block',
+                'standard-library/allocators/interface',
+                'standard-library/allocators/custom-allocators'
             ],
         },
         {

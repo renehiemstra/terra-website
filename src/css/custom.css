@@ -6,18 +6,35 @@
 
 /* You can override the default Infima variables here. */
 
-/* Prevent word breaking in the navbar title */
-.navbar__title {
-    white-space: nowrap; /* Keeps the title on a single line */
+/* Ensure words in the hero title don’t break */
+.hero__title {
+    word-break: keep-all; /* Prevents breaking within words */
+    overflow-wrap: normal; /* Ensures normal word wrapping */
+    white-space: normal; /* Allows wrapping between words */
 }
 
-/* Ensure the navbar adjusts responsibly on small screens */
+/* Ensure words in the hero subtitle (tagline) don’t break */
+.hero__subtitle {
+    word-break: keep-all; /* Prevents breaking within words */
+    overflow-wrap: normal; /* Ensures normal word wrapping */
+    white-space: normal; /* Allows wrapping between words */
+}
+
+/* Adjust for mobile screens */
 @media (max-width: 996px) { /* Docusaurus mobile breakpoint */
-    .navbar__title {
-        font-size: 1.2rem; /* Slightly reduce size on mobile if needed */
-        white-space: nowrap; /* Maintain no-break behavior */
-        overflow: hidden; /* Prevent overflow issues */
-        text-overflow: ellipsis; /* Add ellipsis if too long */
+    .hero__title {
+        word-break: keep-all; /* Keep words whole */
+        overflow-wrap: normal;
+        white-space: normal; /* Allow natural wrapping */
+        font-size: 1.5rem; /* Adjust size for mobile (optional) */
+        max-width: 100%; /* Fit within container */
+    }
+    .hero__subtitle {
+        word-break: keep-all;
+        overflow-wrap: normal;
+        white-space: normal;
+        font-size: 1.2rem; /* Adjust size for mobile (optional, default ~1.25rem) */
+        max-width: 100%; /* Fit within container */
     }
 }
 
