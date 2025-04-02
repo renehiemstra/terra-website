@@ -1,41 +1,26 @@
 # Website
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+This [website](https://renehiemstra.github.io/terra-website/) is built using [Docusaurus](https://docusaurus.io/), a modern static website generator
 
 ### Installation
-
+Clone the repo
 ```
-$ yarn
+$ git clone
+cd 
 ```
-
-### Local Development
-
+Then run
 ```
-$ yarn start
-```
-
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
-
-### Build
-
-```
-$ yarn build
+$ npm install
+$ npm run start
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
-
-### Deployment
-
-Using SSH:
-
+### Local development
+Write the following command to the terminal:
 ```
-$ USE_SSH=true yarn deploy
+$ npm run start
 ```
-
-Not using SSH:
-
+This will launch a `localhost:3000` in your browser. You can locally develop and realtime check your changes to the website. If you have the right privileges then you can run
 ```
-$ GIT_USER=<Your GitHub username> yarn deploy
+$ npm run deploy
 ```
-
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+and deploy the website with your latest changes. Otherwise, do a pull request and we will take care of deployment after your changes are accepted.
