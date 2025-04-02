@@ -5,8 +5,8 @@ This [website](https://renehiemstra.github.io/terra-website/) is built using [Do
 ### Installation
 Clone the repo
 ```
-$ git clone
-cd 
+$ git clone git@github.com:renehiemstra/terra-website.git
+cd terra-website
 ```
 Then run
 ```
