@@ -1,0 +1,412 @@
+---
+id: terra-for-cpp
+title: Terra for C / C++ programmers
+---
+
+import { CodeColumns, CodeColumn } from '../../src/components/CodeColumns';
+
+
+# Terra for C / C++ programmers
+Terra is a low-level, statically-typed language designed to interoperate seamlessly with Lua, offering semantics very similar to C/C++. However, its tight integration with Lua means that familiar C++ constructs are often expressed differently. This reference sheet bridges the gap by comparing C++ snippets with their Terra-Lua equivalents, helping C++ programmers transition to Terra. Where applicable, a third column illustrates how to meta-program these constructs using Lua's dynamic capabilities.
+
+## Compilation Models: Ahead-of-Time, Dynamic, and JIT
+
+Understanding how code is compiled and executed is key to grasping the differences between C++ and Terra. C++ relies on **ahead-of-time (AOT)** compilation, where all type checking, code generation, and optimization occur well before the program runs. In contrast, fully **dynamic** systems, like some interpreted languages, process code at runtime, allowing flexibility but sacrificing performance. Terra uses **just-in-time (JIT)** compilation, a hybrid approach that compiles code right before execution, blending the benefits of static type safety with runtime flexibility. This section explores these models, showing how they shape C++ and Terra’s behavior.
+
+### Ahead-of-Time Compilation (C++)
+In AOT compilation, the entire program is translated to machine code during a separate build phase, long before runtime. C++ exemplifies this model, using a preprocessor, compiler, and linker to produce an executable.
+
+<CodeColumns>
+  <CodeColumn title="C++">
+```cpp
+int f() {	
+    int a[3] = {0, 1, 2};	
+    return a[0];	
+}	
+int main() {	
+  return f();
+}
+```
+  </CodeColumn> 
+  <CodeColumn title="C++ AOT compiler: ">
+1. Preprocessor resolves `#include` and macros.
+2. Compiler checks types (e.g., `int[3]`) and generates object code.
+3. Linker combines object files into an executable.
+
+At runtime, the program executes directly with no further compilation.
+  </CodeColumn> 
+</CodeColumns>
+
+> **Note**: AOT compilation ensures static type safety and optimization before execution, but it lacks runtime adaptability. All decisions (e.g., array sizes, types) are fixed at compile time.
+
+### Dynamic Compilation (Interpreted Languages)
+Dynamic systems interpret or compile code at runtime, often line-by-line, allowing types and structures to change during execution. This is common in languages like Python or Lua without JIT.
+
+<CodeColumns>
+  <CodeColumn title="Python">
+```python
+def f():
+    a = [0, 1, 2]  # List, not a fixed array
+    a.append(3)    # Modified at runtime
+    return a[0]
+
+print(f())
+```
+  </CodeColumn> 
+  <CodeColumn title="Python interpreter and dynamic compilation: "> 
+  1. No ahead-of-time type checking—`a` is dynamically typed. 
+  2. The list `a` can grow or change during execution. 
+  3. Performance is slower due to runtime interpretation, but flexibility is high.
+  </CodeColumn> 
+</CodeColumns>
+
+> **Note**: Dynamic compilation allows runtime modifications (e.g., resizing arrays), but it sacrifices the performance and type safety of compiled languages like C++.
+
+### Just-In-Time Compilation (Terra)
+Terra’s JIT compilation occurs right before runtime, when a `terra` function is first invoked or explicitly compiled. Lua drives this process, defining types and generating code that is then fixed for execution, offering a balance between AOT’s performance and dynamic compilation.
+<CodeColumns>
+  <CodeColumn title="Terra">
+  ```terra
+  terra f()
+      var a : int[3] = array(0, 1, 2)
+      return a[0]
+  end
+
+
+  f()  -- Triggers JIT compilation
+
+  -- AOT example:
+terralib.saveobj("f.so", { f = f })  -- Generates shared library
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra’s JIT process: "> 
+  1. Lua runs and defines `f` at compiletime.  
+  2. On first call to `f()`, Terra’s JIT compiler checks types (e.g., `int[3]`), evaluates `array(0, 1, 2)`, and generates machine code.  
+  3. The compiled `f` executes with fixed types and sizes, reused on subsequent calls unless redefined.
+
+  For AOT, `terralib.saveobj` compiles `f` into a shared library (e.g., `f.so`), which can be linked into other programs, bypassing JIT at runtime.
+  </CodeColumn> 
+</CodeColumns>
+
+> **Note**: Terra’s JIT compilation happens just before runtime, locking in static definitions (e.g., `int[3]`) once compiled. This contrasts with C++’s AOT (done well before runtime) and dynamic systems (during runtime). Lua’s role enables code generation (e.g., via `quote`) during compile time, but the resulting Terra code is static in the runtime context.
+
+> **Note**: The "just in time" nature defers compilation until needed, improving startup speed for development while delivering near-AOT performance. Unlike dynamic systems, Terra’s arrays and types cannot change mid-execution in the runtime context.
+
+> **Note**: Terra’s unique AOT support allows generating shared libraries (e.g., via `terralib.saveobj`), which can be linked against like C++ libraries. This offloads compilation from JIT to ahead-of-time, keeping JIT fast for development while enabling optimized, reusable binaries for deployment.
+
+
+
+## Contexts
+In multistage programming, we distinguish between compile-time and runtime contexts. In C++, compile-time includes the preprocessor and template metaprogramming, while runtime encompasses regular function and variable definitions. Similarly, in Terra, the Lua context handles compile-time metaprogramming, and Terra functions define runtime behavior. Terra's semantics are very close to C/C++, but its integration with Lua introduces unique metaprogramming techniques through quotes (`) and escapes ([ ]), enabling dynamic code generation. This section compares equivalent representations in C++ and Terra, highlighting how contexts shift between compile-time and runtime.
+<CodeColumns>
+  <CodeColumn title="Terra">
+    ```terra
+    -- Lua context (any Lua code here)
+    MyInt = int -- assignment to Lua variable 'MyInt'
+    x = global(MyInt)
+    
+    terra f()
+        -- Terra context
+        var bar : MyInt = x + 1
+        --        ~~~~~ _Lua_ context, any Lua can go here, but it needs to evaluate to a Terra type
+        return bar
+    end
+    
+    struct S {
+        a : int
+        --  ~~~ _Lua_ context, evaluates to a Terra type
+        b : float
+    }
+    
+    -- Meta-programming Lua-Terra creates additional places where the context changes.
+    
+    function g() return `4+5 end
+    --                  ~~~~ Terra context, a quote creates a Terra expression from Lua
+    
+    terra h()
+        var baz = [ g() ]
+        --        ~~~~~~~ Lua context, an escape breaks into Lua and evaluates to a Terra expression
+    end
+    ```
+  </CodeColumn> 
+  <CodeColumn title="C++"> 
+    ```cpp
+    // function/global declaration context:
+    typedef int MyInt;
+    MyInt x;
+    
+    int f() {
+        // C++ code context:
+        MyInt bar = x + 1;
+    //  ~~~~~ C++ type context
+    
+        return bar;
+    }
+    
+    struct S {
+        // struct definition context:
+        int a;
+     // ~~~ type context
+        float b;
+    };
+    ``` 
+  </CodeColumn> 
+</CodeColumns>
+
+## Preprocessor
+C++ uses a static preprocessor to manage file inclusion, macros, and conditional compilation, relying on a multi-step build process with separate compilation for custom C code and linking for standard libraries. Terra achieves similar functionality—such as integrating external code and defining reusable constructs—but replaces this static approach with a dynamic, Lua-driven model. By processing code, including C headers, at runtime within Terra’s just-in-time (JIT) compilation pipeline, Lua offers a flexible alternative to C++’s traditional preprocessing.
+
+### Using Multiple Files
+In C++, `#include` directives bring in external code. Terra uses Lua's require function to load modules, which can contain Terra functions and definitions stored in tables.
+
+<CodeColumns>
+  <CodeColumn title="Terra">
+  ```terra
+  local myfile = require("myfile")
+  -- use Lua's require to load another Lua 
+  -- file Terra functions can be stored in 
+  -- a table myfiles
+  terra f()
+      myfile.myfunction()
+  end
+  ```
+  </CodeColumn> 
+  <CodeColumn title="C++"> 
+  ```cpp
+  #include "myfile.h"
+  
+  
+
+  void f() {
+      myfunction();
+  }
+  ```
+  </CodeColumn> 
+</CodeColumns>
+
+### Using C Functions
+C++ uses `#include` to access C standard library functions. Terra provides `terralib.includec` and `terralib.includecstring` to import C headers, creating a Lua table of functions and types.
+<CodeColumns>
+  <CodeColumn title="Terra">
+  ```terra
+  local C = terralib.includecstring [[
+      #include<stdio.h>
+      #include<malloc.h
+  ]]
+  -- can also use terralib.includec("stdio.h") for single file
+  -- C is a table of functions (C.printf) and types (C.FILE)
+  terra hello()
+      C.printf("hello, world\n")
+  end
+  ```
+  </CodeColumn> 
+  <CodeColumn title="C++"> 
+  ```cpp
+  #include <stdio.h>
+  #include <malloc.h>
+  int main() {
+      printf("hello, world\n");
+  }
+  ```
+  </CodeColumn> 
+</CodeColumns>
+
+> **Note**: Terra's `includecstring` processes C headers at Lua runtime, generating bindings automatically. Unlike C++, no separate compilation step is needed—Terra compiles these into the final executable alongside Terra code.
+
+### Preprocessor Macro Equivalents:
+Lua variables can hold values that get substituted into Terra functions. The quotation (\`) operator creates a Terra expression directly from Lua. This value can be spliced into subsequent terra code using an escape: `[ ... ]`.
+<CodeColumns>
+  <CodeColumn title="Terra">
+  ```terra
+  local X = `3+3
+  ```
+  </CodeColumn> 
+  <CodeColumn title="C++"> 
+  ```cpp
+  #define X (3+3)
+  ```
+  </CodeColumn> 
+</CodeColumns>
+
+### Macro functions:
+In Terra, a macro is a Lua function that returns a Terra expression that is directly spliced into surrounding Terra code. It's closely related to a macro function in C / C++.
+<CodeColumns>
+  <CodeColumn title="Terra">
+  ```terra
+  local F = macro(function(a,b)
+      return `a + b
+  end)
+  ```
+  </CodeColumn> 
+  <CodeColumn title="C++"> 
+  ```cpp
+  #define F(a,b) a + b
+  ```
+  </CodeColumn> 
+</CodeColumns>
+
+
+### Conditional Compilation:
+In C++, conditional compilation relies on the preprocessor’s `#ifdef` directives, which can feel rigid and obfuscated due to their static, text-based nature. Terra achieves the same functionality—selectively defining code based on conditions—using Lua’s clear, dynamic syntax. By leveraging Lua’s runtime logic, Terra offers a more readable and flexible alternative to C++’s preprocessor calls.
+<CodeColumns>
+  <CodeColumn title="Terra">
+  ```terra
+  -- use Lua to control how a Terra function is defined
+  if terralib.os == "Windows" then
+      terra getOS() return "Windows" end
+  else
+      terra getOS() return "Linux" end
+  end
+  ```
+  </CodeColumn> 
+  <CodeColumn title="C++"> 
+  ```cpp
+  // Use #ifdef to control how functions are defined
+  #ifdef __WIN32
+      char * getOS() { return "Windows"; }
+  #else
+      char * getOS() { return "Linux"; }
+  #endif
+  ```
+  </CodeColumn> 
+</CodeColumns>
+
+## Literals
+
+C++ and Terra both support a variety of literal types (integers, floats, strings, booleans), but Terra’s integration with Lua introduces differences in syntax and behavior. While C++ uses a static, compile-time approach to literals, Terra leverages Lua’s dynamic runtime environment, often requiring escapes or Lua-specific constructs to achieve equivalent results. This table compares common literals in C++ with their Terra-Lua equivalents.
+
+| **C++**            | **Lua-Terra**                       | **Description**                                                                                          |
+|--------------------|-------------------------------------|----------------------------------------------------------------------------------------------------------|
+| `255, 0377, 0xff`  | `255, 0377, 0xff`                  | Integer literals in decimal (255), octal (0377), and hexadecimal (0xff) are identical in both languages, as Terra inherits C-like syntax for these. |
+| `2147483647LL, 0x7ffffffful` | `2147483647LL, 0x7fffffffULL` | Long integer literals in C++ use `LL` or `ul` suffixes. Terra matches LuaJIT’s conventions, using `LL` for signed long long and `ULL` for unsigned long long, ensuring compatibility with Lua’s number handling. |
+| `123.0, 1.23e2`    | `123.0, 1.23e2`                   | Floating-point literals (decimal and scientific notation) are the same in both languages, reflecting C’s influence on Terra’s syntax. |
+| `"strings\n"`      | `"strings\n" or 'strings\n' or [[strings\n]]` | C++ uses double quotes for strings with escape sequences (e.g., `\n`). Terra supports Lua’s string styles: double quotes (`"..."`), single quotes (`'...'`)—which are equivalent—or long brackets (`[[...]]`) for raw strings, avoiding escape sequence issues. |
+| `'a'`              | `("a")[0]`                         | C++ has single-character literals with single quotes. Terra lacks a direct char literal; instead, you index a string (e.g., `"a"`) at position 0 to get a byte value, or you could define a function for this purpose. |
+| `"hello" "world"`  | `[ "hello".."world" ]`             | C++ concatenates adjacent string literals at compile time. Terra uses Lua’s `..` operator for string concatenation, wrapped in an escape (`[ ]`) to evaluate the Lua expression as a Terra-compatible string at runtime. |
+| `true, false`      | `true, false`                      | Boolean literals are identical in both languages, as Terra adopts C++’s `true` and `false` directly.    |
+
+### Notes
+> **Note**: C++ literals are resolved statically at compile time, with types inferred by the compiler (e.g., `'a'` as `char`, `"hello"` as `const char*`). Terra’s literals are processed at Lua runtime, often requiring Lua constructs (e.g., string indexing, escapes) to match C++ functionality.
+
+> **Note**: For character literals, Terra’s workaround (`("a")[0]`) returns a numeric byte value (e.g., 97 for `'a'`), not a distinct `char` type. You could define a Terra function like `terra char(s : rawstring) : int8 return s[0] end` to mimic C++’s `'a'` by converting a string to its first byte.
+
+> **Note**: Long brackets `[[...]]` could be confused with Terra escapes `[ ... ]` that operate on Terra quoted expressions. In case of ambiguity, use `escape ... end` to apply an escape instead.
+
+
+## Declarations and Type Constructors
+
+C++ and Terra both allow variable declarations within functions, but their syntax and type systems differ due to Terra’s integration with Lua. C++ uses static typing with optional type inference (via `auto`), while Terra combines explicit typing, type inference, and Lua-driven metaprogramming for dynamic code generation. This section compares basic variable declarations in C++ with their Terra equivalents, including Terra’s advanced constructs like `symbol` and `quote` for metaprogramming.
+
+### Declaring Variables
+C++ declares variables with explicit types or inferred types using `auto`, all resolved statically. Terra offers similar functionality with `var`, supporting both explicit typing and inference, and extends this with Lua metaprogramming for runtime code generation.
+<CodeColumns>
+  <CodeColumn title="C++"> 
+  ```cpp
+  void f() {
+      int x;
+      int y = 255;
+      auto z = 255;
+  }
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra">
+  ```terra
+  terra f()
+      var x
+      var y : int = 255
+      var z = 255
+  end
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Metaprogrammed">
+  ```terra
+  x = symbol(int)
+  y = symbol(int)
+  z = symbol(int)
+  local zdeclare = quote 
+      var [z] = 255
+  end
+  terra f() 
+      var [x]
+      var [y]
+      [zdeclare]
+      return x + y + z
+  end
+  ```
+  </CodeColumn> 
+</CodeColumns>
+
+### Sizing integer types:
+C++ provides keywords like `short` and `long` for sized integers, with sizes varying by platform. Terra uses explicit, portable type names (e.g., `int16`, `int64`) for clarity and consistency.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  short s; long l;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  var s : int16, l : int64
+  ```
+  </CodeColumn> 
+</CodeColumns>
+
+> **Note**: C++’s `short` and `long` sizes depend on the compiler and architecture, whereas Terra’s `int16` and `int64` guarantee fixed sizes, aligning with modern C++’s `<cstdint>` (e.g., `int16_t`, `int64_t`).
+
+### Non-integer primitive types:
+C++ supports a range of non-integer primitives like `char`, `float`, and `bool`. Terra mirrors these but adapts `char` handling due to Lua’s string-based approach.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  char c = 'a'; 
+  float f; double d; 
+  bool b;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  var c : int8 = ('a')[0]
+  var f :float, d : double 
+  var b : bool
+  ```
+  </CodeColumn> 
+</CodeColumns>
+
+### Multiple Declarations
+C++ allows comma-separated declarations with a shared type, initialized in one line. Terra supports multiple declarations but requires separate type definition for each variable when initialized together.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  int a = 1,b = 2,c = 3;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  var a : int, b : int, c : int = 1,2,3
+  ```
+  </CodeColumn> 
+</CodeColumns>
+
+### Arrays
+C++ initializes arrays with a size or an initializer list, with types and sizes resolved statically at compile time. Terra treats `array` as an expression to populate arrays, requiring explicit type and size definitions that are fixed during just-in-time (JIT) compilation, which occurs right before runtime. The `arrayof` function allows type specification when initializer expressions don’t match the desired type, with all decisions finalized prior to execution.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  int a[10];
+  int a[]={0,1,2};
+  float a[]={0,1,2};
+  int a[2][3]={ {1,2,3},{4,5,6} }; 
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  var a : int[10];
+  var a : int[3] = array(0,1,2)
+  var a = arrayof([float],0,1,2) 
+  var a : (int[3])[2] = array(
+      array(1,2,3),
+      array(4,5,6)
+  )
+  ```
+  </CodeColumn> 
+</CodeColumns>

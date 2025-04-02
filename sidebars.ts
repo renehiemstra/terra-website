@@ -4,35 +4,54 @@ const sidebars: SidebarsConfig = {
 
   tutorialSidebar: [
     {
-        type: 'doc',
+        type: 'category',
         label: 'Getting started',
-        id: 'getting-started',    
-    },
-    {
-      type: 'category',
-      label: 'Metaprogramming',
-      link: {
-        type: 'doc',
-        id: 'metaprogramming/intro',
-      },
-      items: [
-        'metaprogramming/hello-world',
-      ],
+        link: {
+            type: 'doc',
+            id: 'getting-started/intro',
+        },
+        items: [
+                'getting-started/install-and-setup',
+                'getting-started/your-first-program',
+                'getting-started/terra-for-cpp',
+        ],
     },
     {
         type: 'category',
-        label: 'Resource management',
+        label: 'Core language',
         link: {
             type: 'doc',
-            id: 'resource-management/intro',
+            id: 'core-language/intro',
         },
+        collapsed: false, // Keep expanded to show contents
         items: [
-            'resource-management/core-concepts',
-            'resource-management/ownership-model',
-            'resource-management/comparison',
-            'resource-management/tutorial/move-semantics',
-            'resource-management/tutorial/value-semantics',
-        ],
+            {
+                type: 'category',
+                label: 'Metaprogramming',
+                link: {
+                  type: 'doc',
+                  id: 'core-language/metaprogramming/intro',
+                },
+                items: [
+                  'core-language/metaprogramming/hello-world',
+                ],
+            },
+            {
+                type: 'category',
+                label: 'Resource management',
+                link: {
+                    type: 'doc',
+                    id: 'core-language/resource-management/intro',
+                },
+                items: [
+                    'core-language/resource-management/core-concepts',
+                    'core-language/resource-management/ownership-model',
+                    'core-language/resource-management/comparison',
+                    'core-language/resource-management/tutorial/move-semantics',
+                    'core-language/resource-management/tutorial/value-semantics',
+                ],
+            },
+        ]
     },
     {
         type: 'category',
