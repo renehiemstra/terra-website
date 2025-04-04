@@ -9,7 +9,7 @@ import { CodeColumns, CodeColumn } from '../../src/components/CodeColumns';
 # Terra for C / C++ programmers
 Terra is a low-level, statically-typed language designed to interoperate seamlessly with Lua, offering semantics very similar to C/C++. However, its tight integration with Lua means that familiar C++ constructs are often expressed differently. This reference sheet bridges the gap by comparing C++ snippets with their Terra-Lua equivalents, helping C++ programmers transition to Terra. Where applicable, a third column illustrates how to meta-program these constructs using Lua's dynamic capabilities.
 
-## Compilation Models: Ahead-of-Time, Dynamic, and JIT
+## Compilation Models
 
 Understanding how code is compiled and executed is key to grasping the differences between C++ and Terra. C++ relies on **ahead-of-time (AOT)** compilation, where all type checking, code generation, and optimization occur well before the program runs. In contrast, fully **dynamic** systems, like some interpreted languages, process code at runtime, allowing flexibility but sacrificing performance. Terra uses **just-in-time (JIT)** compilation, a hybrid approach that compiles code right before execution, blending the benefits of static type safety with runtime flexibility. This section explores these models, showing how they shape C++ and Terra’s behavior.
 
@@ -39,7 +39,7 @@ At runtime, the program executes directly with no further compilation.
 
 > **Note**: AOT compilation ensures static type safety and optimization before execution, but it lacks runtime adaptability. All decisions (e.g., array sizes, types) are fixed at compile time.
 
-### Dynamic Compilation (Interpreted Languages)
+### Dynamic Compilation (Lua / Python)
 Dynamic systems interpret or compile code at runtime, often line-by-line, allowing types and structures to change during execution. This is common in languages like Python or Lua without JIT.
 
 <CodeColumns>
@@ -285,7 +285,6 @@ C++ and Terra both support a variety of literal types (integers, floats, strings
 | `"hello" "world"`  | `[ "hello".."world" ]`             | C++ concatenates adjacent string literals at compile time. Terra uses Lua’s `..` operator for string concatenation, wrapped in an escape (`[ ]`) to evaluate the Lua expression as a Terra-compatible string at runtime. |
 | `true, false`      | `true, false`                      | Boolean literals are identical in both languages, as Terra adopts C++’s `true` and `false` directly.    |
 
-### Notes
 > **Note**: C++ literals are resolved statically at compile time, with types inferred by the compiler (e.g., `'a'` as `char`, `"hello"` as `const char*`). Terra’s literals are processed at Lua runtime, often requiring Lua constructs (e.g., string indexing, escapes) to match C++ functionality.
 
 > **Note**: For character literals, Terra’s workaround (`("a")[0]`) returns a numeric byte value (e.g., 97 for `'a'`), not a distinct `char` type. You could define a Terra function like `terra char(s : rawstring) : int8 return s[0] end` to mimic C++’s `'a'` by converting a string to its first byte.
@@ -409,4 +408,576 @@ C++ initializes arrays with a size or an initializer list, with types and sizes 
   )
   ```
   </CodeColumn> 
+</CodeColumns>
+
+### Pointers and references
+Pointers are essential for low-level programming in C++ and Terra, enabling direct memory manipulation. C++ uses statically typed pointers, including raw pointers, null pointers, and references, each with distinct syntax. Terra adapts these to its type system and Lua environment, declaring pointers with `&` and streamlining dereferencing, often bypassing C++’s reference syntax. This section compares pointer declarations and usage in C++ with Terra equivalents, highlighting how Terra delivers similar functionality differently.
+
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  int* p; 
+    
+  char* s ="hello";
+    
+  void* p = NULL;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  var p : &int
+
+  var s : rawstring = "hello"
+
+  var p : &opaque = nil
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+> **Note**: C++ uses `*` to declare a pointer, while Terra uses `&` (read as "address of") before the type, e.g., `&int` for a pointer to an integer. Both are uninitialized by default.
+> **Note**: C++’s `char*` points to a null-terminated string. Terra’s `rawstring` (equivalent to `&int8`, a pointer to an 8-bit integer) handles Lua string literals, which are implicitly null-terminated when passed to Terra.
+> **Note**: C++’s `void*` is a typeless pointer, set to `NULL` for null. Terra uses `&opaque` as a generic pointer type, with `nil` (Lua’s null value) indicating a null pointer in the Terra context. `nil` integrates with Lua’s type system, ensuring compatibility across contexts.
+> **Note**: C++ references (`&`) alias an object, accessed with `.`, while pointers use `->`. Terra lacks references, using pointers (e.g., `&Vec3`) instead. The `.` operator works like C++’s `->`, automatically dereferencing the pointer for member access, reducing syntactic noise.
+
+### Typedefs, constants, other
+Typedefs are just assignments in Lua because Terra types are Lua values
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  typedef String char*;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  local String = &int8 
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+Terra currently does not have support for `const` local variables.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  const int c = 3;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  var c = 3
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+### Enums
+C++ uses enum for static, named constants with integer values. Terra lacks native enums, relying on Lua metaprogramming with tables or macros to achieve similar functionality.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  enum weekend {SAT,SUN};
+  weekend f() {
+      return SAT
+  }
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  local function Enum(...)
+      local t = { type = int }
+      for i,name in ipairs({...}) do
+            -- make 0-based to match C++
+          t[name] = i - 1
+      end
+      return t
+  end
+  weekend = Enum("SAT","SUN")
+  terra f() : weekend.type
+      return weekend.SAT
+  end
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+
+
+## Global (constant) values
+C++ defines global constants with const at file scope, ensuring immutability (e.g., const int G = 42). Terra uses Lua variables for mutable globals (e.g., local G = 42), or Terra-specific global(type, expr) for mutable globals with an optional initial expression, and constant(type, expr) for immutable constants requiring both type and value or expression.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  int x = 3;
+  const int y = 3;
+  int z[] = { 3,4, 5};
+  const int a[] = { 3,4,5};
+
+  void f() {
+  }
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  x = global(int)
+  y = constant(int,3)
+  z = global(int,`array(3,4,5))
+  a = constant(int,`array(3,4,5))
+
+  terra f()
+  end
+  ```
+  </CodeColumn>
+</CodeColumns>
+Metaprogramming enables you to create sophisticated expressions at compile time that are embedded as constant values in your Terra code:
+```terra
+sin_values = {}
+N = 32
+for i = 1,N do
+    sin_values[i] = math.sin(2 * math.pi * (i-1)/N))
+end
+sin_table = constant(`arrayof(float,sin_values))
+```
+
+## Storage Classes
+C++ uses storage classes (auto, static, extern) to control variable and function scope, lifetime, and linkage, all set at compile time. Terra lacks direct equivalents, relying on Lua’s scoping and global for persistent values. Visibility is managed via terralib.saveobj, while lexical scope can mimic some static behavior using do/end.
+
+### Global Variables and Functions
+C++ defines globals with implicit external linkage or static for internal linkage, and extern for cross-file access. Terra uses global(type) for mutable globals, with visibility specified in saveobj.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  int x;
+  static int y;
+  
+  static void g() {
+      return x + y;
+  }
+  void f() {
+      static int z = 0;
+      return g();
+  }
+  extern int w;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  x = global(int)
+  y = global(int)
+  
+  terra g() 
+      return x + y
+  end
+  terra f()
+      return g()
+  end
+  terralib.saveobj("out.o", { x = x, f = f}) 
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+> **Note**: In Terra, only `x` and `f` are exposed as symbols, but `y` and `g` are included internally since they’re used.
+
+> **Note**: C++’s `static` limits linkage or persistence; Terra’s `global` is mutable, with `saveobj` controlling exported symbols.
+
+> **Note**: C++’s `extern` links globals across files; Terra relies on `saveobj` or external Lua modules for similar access.
+
+### Local Static Variables
+C++’s `static` in functions creates persistent locals. Terra has no direct equivalent but can use Lua’s `do/end` to lexically scope a `global` for similar effect.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  void f() {
+      static int z = 0;
+      return z;
+  }
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  do
+      local z = global(int,0)
+      terra f()
+          return z
+      end
+  end
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+> **Note**: Terra uses `do/end` to scope globals, approximating C++’s local `static` without a direct keyword.
+
+
+## Statements
+C++ and Terra use statements to control program flow, but their syntax reflects different influences: C++’s C heritage versus Terra’s Lua foundations. This section compares assignment, declaration, and control structures, highlighting Terra’s adaptations and metaprogramming capability.
+
+### Assignements
+C++ offers compound assignment operators like `+=`, while Terra follows Lua’s simpler approach, requiring explicit operations.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  x = y;
+  x += y;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  x = y
+  x = x + y -- no += like Lua
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+### Declarations
+C++ declares variables with type-first syntax or `auto`; Terra uses `var` with optional type annotation.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  int x;
+  int y = 1;
+  auto z = 2;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  var x : int
+  var y : int = 1
+  var z = 2
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+
+### Semi-Colons
+C++ requires semicolons to separate statements; Terra makes them optional, inherited from Lua, though sometimes useful for clarity.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  x = y; y = z;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  x = y; y = z;   -- Optional for clarity
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+
+### Blocks
+C++ uses curly braces for blocks; Terra uses `do/end`.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  void f() {
+        {
+            printf("hi\n");
+            printf("hi\n");
+            printf("hi\n");
+        }
+    }
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  terra f()
+      do
+          C.printf("hi\n")
+          C.printf("hi\n")
+          C.printf("hi\n")
+      end
+  end
+  ```
+  </CodeColumn>
+  <CodeColumn title="Meta-programmed"> 
+  ```terra
+  local stats = { 
+      `C.printf("hi\n"),
+      `C.printf("hi\n"),
+      `C.printf("hi\n")
+  }
+  terra f()
+      do
+          [stats]
+      end
+  end
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+> **Note**: Terra's metaprogramming with `[stats]` injects quoted statements inside the code block.
+
+### Conditionals
+C++ uses parentheses and braces for `if/else`; Terra adopts Lua’s `then/end`, omitting parentheses.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  if (x) { 
+      // <statements> 
+  }
+  else if (y) { 
+      // <statements> 
+  }
+  else { 
+      // <statement> 
+  }
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  if x then 
+      -- <statements>
+
+  elseif y then 
+      -- <statements>
+
+  else 
+      -- <statements> 
+  end
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+
+### Loops
+C++ provides `while`, `for`, and `do-while`; Terra uses Lua’s `while`, `for`, and `repeat/until`, with adjusted bounds.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  while(x) {
+      // <statements>
+  }
+
+  for(int i = 0; i < 100; i++) {
+      // <statements>
+  }
+
+  do { 
+      // <statements>
+  } while(b);
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  while x do 
+      -- <statements>
+  end
+
+  for i = 0,100 do  -- note [0,100) bounds
+      -- <statements>
+  end 
+
+  repeat 
+      -- <statements>
+  until ~b
+  ```
+  </CodeColumn>
+</CodeColumns>
+> **Note**: Terra’s `for i = 0,100` excludes 100; `~b` inverts `b` for `until`.
+
+### Switch
+C++’s `switch/case` uses braces and colons; Terra’s `switch` uses `then/else`, aligning with Lua-like flow.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  switch(x) {
+      case X1: a;
+      case X2: b;
+
+      default: c;
+  }
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  switch x do
+      case X1 then a
+      case X2 then b
+  else
+      c
+  end
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+### Control Flow
+C++ and Terra share `break` and `return`. While C++ allows (dead) code after `break` and `return`, Terra throws a compile error.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  break;
+  return;
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  break
+  return
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+### Exceptions
+C++ supports exceptions with `try/catch` for error handling; Terra omits them to maintain simplicity, favoring alternative error strategies. Note that Lua’s `pcall` can handle errors externally.
+
+## Functions
+Functions in C++ and Terra drive program logic, but their definition, declaration, and customization differ. While C++ code generation is static, Terra features powerful abstractions for generating functions dynamically using JIT compilation.
+
+### Defining functions
+C++ defines functions with a straightforward, type-first syntax and braces. Terra uses terra blocks with Lua-style annotations, supporting metaprogramming for advanced constructs.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  int f(int x, int y) { 
+      return x + y; 
+  }
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  terra f(x : int, y : int) : int 
+      return x + y 
+  end
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+Metaprogramming in Terra can unroll operations, like summing arguments, using `symbol`, `escape`, and `emit quote` for dynamic code generation.
+<CodeColumns>
+  <CodeColumn title="Terra meta-programm">
+  ```terra
+  local args = {symbol(int),symbol(int)}
+  terra f([args])
+      var s = 0
+      escape
+          for _,a in ipairs(args) do
+              emit quote
+                s = s + a
+              end
+          end
+      end
+      return s
+  end
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Generated code"> 
+  ```terra
+  terra f(arg_1 : int, arg_2 : int) : int 
+      var s = 0
+      s = s + arg_1
+      s = s + arg_2
+      return s
+  end
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+C++ uses empty braces for void returns; Terra employs an empty tuple (`: {}`) to signify no return value.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  void f() {
+  } // no returns
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  terra f() : {} -- empty tuple means void
+  end
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+### Declaring functions
+C++ declares functions with prototypes; Terra uses function types (e.g., `{args} -> ret`), optionally metaprogrammed with Lua variables.
+
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  int f(int x, int y);
+    
+  void g();
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  terra f :: {int,int} -> int
+  --         ~~~~~~~~~~~~~~~~ function type
+  terra g :: {} -> {}
+  --         ~~    ~~ empty tuple for void/no-args
+  ```
+  </CodeColumn>
+  <CodeColumn title="Meta-programmed"> 
+  ```terra
+  local args = {int,int}
+  local ret  = int
+  local type = args -> reg
+  local void = {} -> {}
+  terra f :: type
+  terra g :: void
+  ```
+  </CodeColumn>
+</CodeColumns>
+> **Note**: Terra’s `::` specifies function signatures; metaprogramming builds types dynamically with Lua.
+
+### Function Inlining
+C++ suggests inlining with `inline`, while Terra’s `setinlined(true)` forces it, akin to `__always_inline__`, for performance-critical code.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  inline void f();
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  f :: {} -> {}
+  f:setinlined(true) 
+  -- actually equivalent to __alwaysinline__
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+
+### Operator overloading
+C++ overloads operators as standalone functions; Terra ties them to a type’s metamethods.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  struct T {};
+  T operator+(T x, T y) {
+      ...
+  }
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  struct T {}
+  terra T.metamethods.__add(x : T, y : T)
+      ...
+  end
+  ```
+  </CodeColumn>
+</CodeColumns>
+
+### Function overloading
+Both languages support overloading, but Terra distinguishes single functions from overloaded sets using `terralib.overloadedfunction`.
+<CodeColumns>
+  <CodeColumn title="C++">
+  ```cpp
+  int max(int a, int b) {
+      return (a > b) ? a : b;
+  }
+  float max(float a, float b) {
+      return (a > b) ? a : b;
+  }
+  ```
+  </CodeColumn> 
+  <CodeColumn title="Terra"> 
+  ```terra
+  max = terralib.overloadedfunction("max" { 
+      terra(a : int, b : int) 
+          return terralib.select( a > b, a, b)
+      end,
+      terra(a : float, b : float) 
+          return terralib.select( a > b, a, b)
+      end
+  })
+  ```
+  </CodeColumn>
 </CodeColumns>
