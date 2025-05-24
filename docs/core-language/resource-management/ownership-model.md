@@ -11,11 +11,11 @@ Passing objects to functions or in an assignment can be done in two ways:
 1. By value: Transfers ownership to the receiver.
     - L-values: Use the `__copy` method if defined, duplicating the resource, or default to transfering ownership using a move.
     - R-Values: Always transfer ownership by a move.
-    - Non-managed object are trivially copied bitwise.
+    - Non-managed objects are trivially copied bitwise.
 2. By Reference (B-Values): Grants temporary access via `&T`. No ownership transfer occurs; the original owner retains responsibility for cleanup via `__dtor` in case of managed types.
 
 ## Planned safety features
-Terra’s single-ownership model enables compile-time verification of resource safety for sequential and parallel programs. The following enhancements will strengthen this model:
+Terra’s single-ownership model enables compile-time verification of resource safety for sequential and parallel programs. The following enhancements are planned to strengthen this model:
 
 1. **Initialization Tracking:**
     - Tracks variable initialization at compile time.
@@ -25,4 +25,3 @@ Terra’s single-ownership model enables compile-time verification of resource s
 2. **Constant References (`const&`):** 
     - Enforces read-only access (`const& T`) recursively at compile time.
     - Allows safe, unsynchronized sharing in parallel programs.
-    - Complements `__move` and `&T` with immutable borrowing.

@@ -1,20 +1,8 @@
 # Resource management in Terra
-Resource management is a critical aspect of programming languages, and Terra’s new system blends C++’s flexibility with Rust’s ownership principles to deliver safe, efficient defaults while unlocking its metaprogramming potential. This implementation introduces scope-bound resource management, enhancing Terra’s capabilities beyond its historical reliance on manual, C-style methods. In the sections that follow, we’ll explore the core concepts, ownership model, key methods, and practical tutorials—from basic data structures to advanced integrations—showcasing how Terra balances performance, safety, and adaptability.
+Resource management is a critical aspect of programming languages, and Terra’s new system blends C++’s flexibility with Rust’s ownership principles to deliver safe, efficient defaults while unlocking its metaprogramming potential. In the sections that follow, we’ll explore the core concepts, ownership model, key methods, and practical tutorials—from basic data structures to advanced integrations—showcasing how Terra balances performance, safety, and adaptability.
 
-```terra
-terra terraFoo(x : int, y : int, z : bool)
-    if z == true then
-        for i=0,3 do
-            x = x + 1
-        end 
-    elseif x == y then
-        return "hello"
-    else
-        return "hello there \t I am here"
-    end
-    return "who?\n let the dogs out"
-end
-```
+@embed-code(tutorials/tutorial-move-semantics/test.lua)
+
 
 ## Approaches to resource management
 Resource management in programming languages typically falls into one of three categories:
@@ -32,9 +20,9 @@ Resource management in programming languages typically falls into one of three c
 Historically, Terra relied solely on manual, C-style resource management. Though effective, this method restricted the full potential of Terra’s powerful metaprogramming capabilities. To overcome this constraint, the current implementation introduces scope-bound resource management, bringing Terra closer to modern programming standards while maintaining its performance and metaprogramming edge.
 
 ## Scope-Bound Resource Management (RAII)
-The new implementation adopts scope-bound resource management [RAII](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization), a technique widely used in systems programming languages such as C++ and Rust. In RAII, a resource’s lifecycle is bound to a stack-allocated object that manages it. When the object exits its scope — unless explicitly returned — the associated resource is automatically released.
+In scope-bound resource management or RAII, a resource’s lifecycle is bound to a stack-allocated object that manages it. When the object exits its scope — unless explicitly returned — the associated resource is automatically released. 
 
-### Examples of Resources Managed with RAII:
+Examples of resources that can be managed this way are:
 - Heap-allocated memory
 - Threads of execution
 - Open network sockets
@@ -43,5 +31,7 @@ The new implementation adopts scope-bound resource management [RAII](https://en.
 - Disk space allocations
 - Database connections
 
+In Terra's standard library, we currently use scope-bound resource management to manage [memory allocation](./../../standard-library/allocators/intro.md) and shared memory [threads of execution](./../../standard-library/threads/intro.md).
+
 ## Exploring Terra’s Resource System
-Next, we explore the specifics of Terra’s resource management system. We begin with the core concepts that define this approach, followed by an in-depth look at the ownership model driving it. Next, we examine the methods governing destruction, move, and copy assignment, including advanced techniques for fine-tuning move and copy semantics. The section concludes with hands-on tutorials showcasing practical applications, from basic data structures to advanced integrations.
+In the sections that follow, we explore the specifics of Terra’s resource management system. We begin with the core concepts that define this approach, followed by an in-depth look at the ownership model driving it. Next, we examine the methods governing destruction, move, and copy assignment, including advanced techniques for fine-tuning move and copy semantics. The section concludes with hands-on tutorials showcasing practical applications, from basic data structures to advanced integrations.
