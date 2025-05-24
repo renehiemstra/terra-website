@@ -22,6 +22,7 @@
     "prism-react-renderer": "^2.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "remark-code-snippets": "^1.1.0",
     "web-tree-sitter": "^0.25.3"
   },
   "devDependencies": {

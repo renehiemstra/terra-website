@@ -2,6 +2,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import type { Configuration } from 'webpack';
+import path from 'path';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -42,6 +43,18 @@ const config: Config = {
           // Remove this to remove the "edit this page" links.
           editUrl:
             'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+          remarkPlugins: [
+            [
+              require('remark-code-snippets'),
+              {
+                baseDir: path.resolve(__dirname),
+                extensions: {
+                  t: 'terra', // Map .t files to 'terra' language
+                  js: 'js',   // Map .js files to 'js' language
+                },
+              },
+            ],
+          ],
         },
         blog: {
           showReadingTime: true,
