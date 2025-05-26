@@ -4,3 +4,6 @@
 [submodule "tutorials/tutorial-value-semantics"]
 	path = tutorials/tutorial-value-semantics
 	url = https://github.com/simkinetic/tutorial-value-semantics.git
+[submodule "tutorials/tutorial-resource-management"]
+	path = tutorials/tutorial-resource-management
+	url = git@github.com:simkinetic/tutorial-resource-management.git
