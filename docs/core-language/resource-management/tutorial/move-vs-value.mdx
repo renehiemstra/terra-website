@@ -80,6 +80,11 @@ The `VectorPair` is an aggregate datastructure of two `DynamicVector`'s. Since `
 ```terra file=./tutorials/tutorial-resource-management/libtutorial.t start=dynamic_vector_pair_start end=dynamic_vector_pair_end
 ```
 
+In particular note the `__move__` directives in the following line:
+```terra file=./tutorials/tutorial-resource-management/libtutorial.t start=pair_new_start end=pair_new_end
+```
+The `__move__` directive tells the compiler to use the `__move` method rather than a `__copy` (if it is implemented), avoiding any potential copies.
+
 ## Example use-case
 Consider next the following application code where the data structures are combined. We'll highlight where moves or copies are taking place
 
@@ -96,7 +101,7 @@ Finally, the two components of `dual` are deleted.
 ```
 Adding three elements to 's'.
 Adding two more elements to 's'.
-Reallocating stack memory.
+Reallocating DynamicStack.
 Move 's' -> 'v'
 Move 't' -> 'w'
 Move '(v, w)' -> 'dual'
@@ -106,8 +111,8 @@ Contents of 'dual':
   dual(2) = (3, 3)
   dual(3) = (4, 2)
   dual(4) = (5, 1)
-Deleting vector.
-Deleting vector.
+Deleting DynamicVector.
+Deleting DynamicVector.
 ```
   </CodeColumn> 
   <CodeColumn title="Value-semantics"> 
@@ -121,24 +126,26 @@ Finally, `s`, `t` and `v`, `w` and the two components of `dual` are deleted.
 ```
 Adding three elements to 's'.
 Adding two more elements to 's'.
-Reallocating stack memory.
+Reallocating DynamicStack.
 Copy 's' -> 'v'
+Copying DynamicVector.
 Copy 't' -> 'w'
+Copying DynamicVector.
 Copy '(v, w)' -> 'dual'
-Deleting vector.
-Deleting vector.
+Copying DynamicVector.
+Copying DynamicVector.
 Contents of 'dual':
   dual(0) = (1, 1)
   dual(1) = (2, 2)
   dual(2) = (3, 3)
   dual(3) = (4, 2)
   dual(4) = (5, 1)
-Deleting vector.
-Deleting vector.
-Deleting vector.
-Deleting stack.
-Deleting vector.
-Deleting stack.
+Deleting DynamicVector.
+Deleting DynamicVector.
+Deleting DynamicVector.
+Deleting DynamicStack.
+Deleting DynamicVector.
+Deleting DynamicStack.
 ```
   </CodeColumn> 
 </CodeColumns>
