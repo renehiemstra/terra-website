@@ -1,0 +1,144 @@
+---
+id: move-vs-value
+title: Tutorial - Value versus Move Semantics
+---
+
+import { CodeColumns, CodeColumn } from '../../../../src/components/CodeColumns';
+
+
+# Tutorial - Value versus Move Semantics
+In this tutorial, we explore Terra’s resource management system through the lens of value and move semantics. The default approach to resource management is to move resources when they are passed by value to a function or used in an assignment. Value semantics - where resources behave more like regular values - is simply achieved by implementing a `__copy` method where you, as the programmer, are in control of how values are copied.
+
+We’ll implement basic data structures to demonstrate how managed types integrate seamlessly, showcasing the power and simplicity of ownership transfer in Terra.
+
+We’ll build the following managed types:
+
+* `DynamicStack`: A dynamically sized container that allocates memory on the heap. It offers element access, push and pop methods, and automatically reallocates resources when capacity is exceeded. We'll add an option to compile a `__copy` method that performs a deepcopy of the resource.
+* `DynamicVector`: A dynamically sized container that allocates a single chunk of heap memory without reallocation. It provides element access and supports a user-defined cast from a `DynamicStack` for resource transfer. We'll add an option to compile a `__copy` method that performs a deepcopy of the resource.
+* `VectorPair`: An aggregate type combining two Dynamic Vectors, with element access to its paired components.
+
+Our focus is on the two ways of ownership transfer: 
+1. Move semantics: how resources are transferred efficiently by default, ensuring single ownership without unnecessary copying. 
+2. Value semantics: How to make a type copyable by implementing a `__copy` method
+
+Let’s dive in and see these concepts in action!
+
+## Tutorial setup
+You can either download the tutorial files [here](https://github.com/simkinetic/tutorial-resource-management.git) or follow along. We'll consider the following directory structure:
+```plaintext
+/tutorial-move-semantics/
+  ├── libtutorial.t
+  ├── tutorial.t
+  └── utils.t
+```
+First we'll write a small library for logging and checking asserts. Put the code below in a file `utils.t`. Note how easy it is to simply hijack C-functions you are familiar with.
+
+```terra file=./tutorials/tutorial-move-semantics/utils.t start=utils_start end=utils_end
+```
+The implementation of the dynamic stack, vector and vector pair will be added to a `libtutorial.t` file.
+
+## Implementation of a dynamic stack
+Let’s kick off with `DynamicStack`. This dynamic, heap-allocated container supports element access via `stack(i)`, along with push and pop methods. It automatically reallocates when capacity is exceeded. By defining only `__init` and `__dtor`, we leverage Terra’s auto-generated `__move` for efficient resource transfers, enforcing move-only behavior without copying—a perfect entry point to understanding Terra’s default ownership and resource management. We'll conditionally compile a `__copy` method that enables copyability like ordinary values.
+
+Some general remarks are:
+* Library Support: Load `terralibext` for memory management and C’s `stdlib` via    `terralib.includec("stdlib.h")`.
+* The Lua function `terralib.memoize` enables caching of the definition `DynamicStack(T)` for element type `T`.
+* Static Methods:`Stack.metamethods.__getmethod` simplifies static method access, enabling calls like `Stack.new`.
+* Element Access: `Stack.metamethods.__apply`, a macro, enables `stack(i)` for both get/set access.
+
+**Memory Management Notes**
+* C Integration: Uses `malloc`, `realloc`, and `free` from C’s `stdlib` for heap management.
+* Move Semantics: `push` and `pop` use `__move__` to transfer resources via a type’s `__move` method (if defined), avoiding copies.
+* Implementation: Implements `__init` and `__dtor`; `__move` is auto-generated, making the stack movable but not copyable by default.
+
+```terra file=./tutorials/tutorial-value-semantics/libtutorial.t start=dynamic_stack_start end=dynamic_stack_end
+```
+
+Important to understand is that the `__copy` method is conditionally compiled. When `copyable = false` the default behavior is to move data when passing by value to functions. When `copyable = true` the `__copy` method is compiled which enables deepcopying of data when passing arguments by value to functions.
+```terra file=./tutorials/tutorial-value-semantics/libtutorial.t start=stack_copy_start end=stack_copy_end
+```
+
+## Implementation of a dynamic vector
+Next, we’ll implement `DynamicVector`, a fixed-size, heap-allocated container. Unlike `DynamicStack`, it doesn’t reallocate, maintaining a single memory chunk. It supports element access with `vector(i)` and introduces a user-defined cast from `DynamicStack` to transfer resources efficiently. An auto-generated `__move` ensures move-only behavior by default. An optional `__copy` method makes the type copyable. 
+
+The same general remarks apply as for the `DynamicStack` implementation. C's `malloc`, `realloc` and `free` are used to allocate, reallocate, and deallocate resources, respectively.
+
+Specific notes on memory management are:
+* Move Semantics: The `__cast` metamethod reinterpretes a reference to a stack as a reference to a vector. Paired with an auto-generated move method `__move :: {&Vector, &Vector} -> {}` it enables moving from a stack into a vector object.
+* Implementation: Implements `__init` and `__dtor`; `__move` is auto-generated, ensuring movability without copyability by default.
+
+```terra file=./tutorials/tutorial-value-semantics/libtutorial.t start=dynamic_vector_start end=dynamic_vector_end
+```
+
+As for the stack, conditional compilation of a `__copy` method enables deepcopying of vectors when passing to functions by value.
+```terra file=./tutorials/tutorial-value-semantics/libtutorial.t start=vector_copy_start end=vector_copy_end
+```
+
+## Implementation of VectorPair
+The `VectorPair` is an aggregate datastructure of two `DynamicVector`'s. Since `DynamicVector` is a managed type, `VectorPair` is too. It's `__init`, `__move`, and `__dtor` method will be auto-generated.
+
+```terra file=./tutorials/tutorial-value-semantics/libtutorial.t start=dynamic_vector_pair_start end=dynamic_vector_pair_end
+```
+
+## Example use-case
+Consider next the following application code where the data structures are combined. We'll highlight where moves or copies are taking place
+
+<CodeColumns>
+  <CodeColumn title="Move-semantics">
+```terra file=./tutorials/tutorial-value-semantics/tutorial-move.t start=tutorial_start end=tutorial_end
+```
+If you run this example - with `copyable=true` - then you should see the following output. Note that the data is moved several times:
+1. first from stack `s` and `t` to vectors `v` and `w`, respectively;
+2. then from `v` and `w` into the aggregate variable `dual`;
+
+Finally, the two components of `dual` are deleted.
+
+```
+Adding three elements to 's'.
+Adding two more elements to 's'.
+Reallocating stack memory.
+Move 's' -> 'v'
+Move 't' -> 'w'
+Move '(v, w)' -> 'dual'
+Contents of 'dual':
+  dual(0) = (1, 1)
+  dual(1) = (2, 2)
+  dual(2) = (3, 3)
+  dual(3) = (4, 2)
+  dual(4) = (5, 1)
+Deleting vector.
+Deleting vector.
+```
+  </CodeColumn> 
+  <CodeColumn title="Value-semantics"> 
+```terra file=./tutorials/tutorial-value-semantics/tutorial-copy.t start=tutorial_start end=tutorial_end
+```
+If you run this example - with `copyable=true` - then you should see the following output. The data is copied several times:
+1. first from stack `s` and `t` to vectors `v` and `w`, respectively;
+2. then from `v` and `w` into the aggregate variable `dual`;
+
+Finally, `s`, `t` and `v`, `w` and the two components of `dual` are deleted. 
+```
+Adding three elements to 's'.
+Adding two more elements to 's'.
+Reallocating stack memory.
+Copy 's' -> 'v'
+Copy 't' -> 'w'
+Copy '(v, w)' -> 'dual'
+Deleting vector.
+Deleting vector.
+Contents of 'dual':
+  dual(0) = (1, 1)
+  dual(1) = (2, 2)
+  dual(2) = (3, 3)
+  dual(3) = (4, 2)
+  dual(4) = (5, 1)
+Deleting vector.
+Deleting vector.
+Deleting vector.
+Deleting stack.
+Deleting vector.
+Deleting stack.
+```
+  </CodeColumn> 
+</CodeColumns>

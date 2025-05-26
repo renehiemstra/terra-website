@@ -5,7 +5,7 @@ We’ll build the following managed types:
 
 * `DynamicStack`: A dynamically sized container that allocates memory on the heap. It offers element access, push and pop methods, and automatically reallocates resources when capacity is exceeded.
 * `DynamicVector`: A dynamically sized container that allocates a single chunk of heap memory without reallocation. It provides element access and supports a user-defined cast from a `DynamicStack` for resource transfer.
-* `Pair`: An aggregate type combining two Dynamic Vectors, with element access to its paired components.
+* `VectorPair`: An aggregate type combining two Dynamic Vectors, with element access to its paired components.
 
 Our focus is on Terra’s move semantics: how resources are transferred efficiently by default, ensuring single ownership without unnecessary copying. Let’s dive in and see these concepts in action!
 
@@ -41,7 +41,7 @@ Some general remarks are:
 ```
 
 ## Implementation of a dynamic vector
-Next, we’ll implement `DynamicVector`, a managed type that builds on Terra’s move semantics to create a fixed-size, heap-allocated container. Unlike `DynamicStack`, it doesn’t reallocate, maintaining a single memory chunk. It supports element access with `vector(i)` and introduces a user-defined cast from `DynamicStack` to transfer resources efficiently. With `__init` and `__dtor` defined, the auto-generated `__move` ensures move-only behavior by default, making it a natural extension of our exploration into Terra’s ownership model.
+Next, we’ll implement `DynamicVector`, a fixed-size, heap-allocated container. Unlike `DynamicStack`, it doesn’t reallocate, maintaining a single memory chunk. It supports element access with `vector(i)` and introduces a user-defined cast from `DynamicStack` to transfer resources efficiently. With `__init` and `__dtor` defined, the auto-generated `__move` ensures move-only behavior by default, making it a natural extension of our exploration into Terra’s ownership model.
 
 The same general remarks apply as for the `DynamicStack` implementation. C's `malloc`, `realloc` and `free` are used to allocate, reallocate, and deallocate resources, respectively.
 
@@ -52,15 +52,38 @@ Specific notes on memory management are:
 ```terra file=./tutorials/tutorial-move-semantics/libtutorial.t start=dynamic_vector_start end=dynamic_vector_end
 ```
 
-
-## Implementation of an aggregate managed type
-The `DualVector` is an aggregate datastructure of two `DynamicVector`'s. Since `DynamicVector` is a managed type, `DualVector` is too. It's `__init`, `__move`, and `__dtor` method will be auto-generated.
+## Implementation of VectorPair
+The `VectorPair` is an aggregate datastructure of two `DynamicVector`'s. Since `DynamicVector` is a managed type, `VectorPair` is too. It's `__init`, `__move`, and `__dtor` method will be auto-generated.
 
 ```terra file=./tutorials/tutorial-move-semantics/libtutorial.t start=dynamic_vector_pair_start end=dynamic_vector_pair_end
 ```
 
+## Example use-case
 
 Consider next the following application code where the data structures are combined. We'll highlight where moves or copies are taking place
 
 ```terra file=./tutorials/tutorial-move-semantics/tutorial.t start=tutorial_start end=tutorial_end
+```
+
+If you run this example then you should see the following output. Note that the data is moved several times:
+1. first from stack `s` and `t` vectors `v` and `w`, respectively;
+2. then from `v` and `w` into the aggregate variable `dual`;
+
+Finally, the two components of `dual` are deleted.
+
+```
+Adding three elements to 's'.
+Adding two more elements to 's'.
+Reallocating stack memory.
+Move 's' -> 'v'
+Move 't' -> 'w'
+Move '(v, w)' -> 'dual'
+Contents of 'dual':
+  dual(0) = (1, 1)
+  dual(1) = (2, 2)
+  dual(2) = (3, 3)
+  dual(3) = (4, 2)
+  dual(4) = (5, 1)
+Deleting vector.
+Deleting vector.
 ```

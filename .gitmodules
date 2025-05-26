@@ -1,3 +1,6 @@
 [submodule "tutorials/tutorial-move-semantics"]
 	path = tutorials/tutorial-move-semantics
 	url = https://github.com/simkinetic/tutorial-move-semantics.git
+[submodule "tutorials/tutorial-value-semantics"]
+	path = tutorials/tutorial-value-semantics
+	url = https://github.com/simkinetic/tutorial-value-semantics.git

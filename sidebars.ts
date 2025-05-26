@@ -47,8 +47,7 @@ const sidebars: SidebarsConfig = {
                     'core-language/resource-management/core-concepts',
                     'core-language/resource-management/ownership-model',
                     'core-language/resource-management/comparison',
-                    'core-language/resource-management/tutorial/move-semantics',
-                    'core-language/resource-management/tutorial/value-semantics',
+                    'core-language/resource-management/tutorial/move-vs-value',
                 ],
             },
         ]
