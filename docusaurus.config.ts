@@ -8,7 +8,7 @@ import path from 'path';
 
 const config: Config = {
   title: 'The Terra Programming Language',
-  tagline: 'Multistage Systems Programming for AI, CG and HPC Workloads',
+  tagline: 'Multistage Systems Programming',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
