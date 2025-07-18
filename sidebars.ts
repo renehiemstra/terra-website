@@ -93,6 +93,7 @@ const sidebars: SidebarsConfig = {
             id: 'standard-library/ranges/intro',
             },
             items: [
+                'standard-library/ranges/core-concepts',
             ],
         },
         {
