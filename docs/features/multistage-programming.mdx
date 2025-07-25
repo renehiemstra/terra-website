@@ -6,14 +6,92 @@ title: Multistage programming
 import { CodeColumns, CodeColumn } from '../../src/components/CodeColumns';
 
 # Multistage programming in Terra
-Multistage programming is a cornerstone of Terra's design, enabling developers to write code that generates and specializes other code at runtime or compile-time. By treating Terra's functions, types, variables, and expressions as first-class values in Lua, multistage programming allows for dynamic code construction, optimization, and specialization. This paradigm, rooted in the interplay between Lua's flexibility and Terra's high-performance compilation, empowers developers to create efficient, adaptive programs with minimal boilerplate.
+Multistage programming is a cornerstone of Terra's design, enabling developers to write code that generates and specializes other code at compile-time. By treating Terra's functions, types, variables, and expressions as first-class values in Lua, multistage programming allows for dynamic code construction, optimization, and specialization. This paradigm, rooted in the interplay between Lua's flexibility and Terra's high-performance compilation, empowers developers to create efficient, adaptive programs with minimal boilerplate.
 
 ## Dynamic Code Generation
-Multistage programming allows Terra to generate code dynamically, tailoring it to specific use cases. For example, you can create functions optimized for particular input sizes, hardware targets, or performance constraints. This is particularly powerful for tasks like loop unrolling, constant folding, or generating SIMD-optimized routines, all driven by Lua's logic.
+The design of Terra stems from the insight that C/C++ effectively comprises multiple "languages": a core language of operators, control flow, and function calls, surrounded by a fragmented meta-language including the preprocessor, templating system, and struct definitions. While C++ templates are Turing-complete and have enabled optimized libraries like Eigen, they are notoriously cumbersome in practice.
 
+Terra embraces and extends this trend by replacing C/C++'s ad-hoc meta-language with a full-fledged programming language: Lua. This pairing of a low-level systems language with a high-level scripting language unlocks capabilities beyond traditional systems. Unlike C/C++, Terra code can be JIT-compiled and executed interleaved with Lua, simplifying the creation of libraries that rely on runtime code generation.
 
-### Example: loop unrolling in polynomial evaluation
-We explore loop unrolling in Terra for evaluating a cubic polynomial $ p(x) = a + b \cdot x + c \cdot x^2 + d \cdot x^3 $, where coefficients ae stored in a struct array (`coeffs[0] = a`, `coeffs[1] = b`,  `coeffs[2] = c`,  `coeffs[3] = d`.). Horner's method rewrites the polynomial as $ a + x \cdot (b + x \cdot (c + x \cdot d)) $ to minimize multiplications and additions, improving numerical stability and performance.
+As a result, features from other languages—such as conditional compilation and templating—emerge organically from Lua's metaprogramming of Terra. For example, templated types, akin to C++ templates but far more flexible, arise through Lua's dynamic code generation, supporting parameterized structs and functions without rigid syntax. Arbitrary compile-time computations, like producing optimized kernels based on runtime parameters or domain-specific abstractions, become simple Lua scripts that seamlessly integrate high-performance Terra code with expressive metaprogramming.
+
+Multistage programming further empowers Terra to dynamically generate code tailored to specific scenarios, such as functions optimized for input sizes, hardware targets, or constraints. This is invaluable for tasks like loop unrolling, constant folding, or SIMD vectorization, all orchestrated via Lua for efficient, adaptive execution.
+
+<details>
+  <summary>Example: Conditional compilation </summary>
+
+Conditional compilation is done with control-flow that determines what code is defined.
+<CodeColumns>
+  <CodeColumn title="Terra">
+    ```terra
+    if iswindows() then
+        terra waitatend()
+            C.getchar()
+        end
+    else
+        terra waitatend() end
+    end
+    ```
+  </CodeColumn> 
+  <CodeColumn title="C++">
+    ```cpp
+    #ifdef _WIN32
+        void waitatend() { 
+            getchar(); 
+        }
+    #else
+        void waitatend() {}
+    #endif
+    ``` 
+  </CodeColumn> 
+</CodeColumns>
+</details>
+
+<details>
+  <summary>Example: Templated types</summary>
+
+Templates become Lua functions that take a terra type T and use it to generate new types and code.
+<CodeColumns>
+  <CodeColumn title="Terra">
+    ```terra
+    function Array(T)
+        struct Array {
+            N : int
+            data : &T
+        }
+        terra Array:get(i : int)
+            return self.data[i]
+        end
+        return Array
+    end
+
+    FloatArray = Array(float)
+    ```
+  </CodeColumn> 
+  <CodeColumn title="C++">
+    ```cpp
+    template<class T>
+    struct Array {
+        int N;
+        T* data;
+
+        T get(int i) {
+            return data[i];
+        }
+
+    };
+    
+    typedef Array<float> FloatArray;
+    ``` 
+  </CodeColumn> 
+</CodeColumns>
+
+</details>
+
+<details>
+  <summary>Example: loop unrolling in polynomial evaluation</summary>
+
+We explore loop unrolling in Terra for evaluating a cubic polynomial $ p(x) = a + b \cdot x + c \cdot x^2 + d \cdot x^3 $, where coefficients are stored in a struct array (`coeffs[0] = a`, `coeffs[1] = b`,  `coeffs[2] = c`,  `coeffs[3] = d`.). Horner's method rewrites the polynomial as $ a + x \cdot (b + x \cdot (c + x \cdot d)) $ to minimize multiplications and additions, improving numerical stability and performance.
 
 Terra's metaprogramming capabilities allow us to unroll loops at compile time, generating explicit, optimized code without runtime overhead. The following code defines a generic, templated Polynomial evaluator supporting float or double types. It uses loop unrolling in the eval method to produce efficient, branch-free code.
 
@@ -35,7 +113,7 @@ tutorial-poly.t:31:     end
 ```
 This shows the loop fully unrolled into sequential multiply-adds, ready for further optimization by the compiler.
 
-View the generated assembly with `:disas()` (with -O2 on an AMD):
+View the generated assembly with `:disas()` (with -O3 on an AMD CPU):
 ```
 assembly for function at address 0x722b5a3bb000
 0x722b5a3bb000(+0):             vmulsd  xmm1, xmm0, qword ptr [rdi + 24]
@@ -48,12 +126,18 @@ assembly for function at address 0x722b5a3bb000
 ```
 This code is already quite efficient with 7 instructions (3 multiplies, 3 adds, 1 return) and 3 registers (an input/output register `xmm0`, a register `xmm1` to hold a temporary, and a general purpose register `rdi` to point to the coefficient array). 
 
+</details>
 
-We can further optimize the code by fusing the addition and multiplication into one operation. Here's the optimized code integrated into the Polynomial factory (replace the original eval method and add the intrinsic definition):
+<details>
+  <summary>Example: Optimizing with LLVM Intrinsics for fused-multiply-addition (FMA) </summary>
+
+We can further optimize the code of the previous example by fusing the addition and multiplication into one operation. The intrinsic (llvm.fma.f64 or llvm.fma.f32) ensures the compiler emits hardware FMA instructions (e.g., vfmadd213sd), reducing instruction count, latency, and rounding errors.
+
+Here's the optimized code integrated into the Polynomial factory (replace the original eval method and add the intrinsic definition):
 ```terra file=./tutorials/tutorial-resource-management/tutorial-poly-optimized.t start=polyeval_start end=polyeval_end
 ```
 
-The Terra intrinsic declaration maps directly to LLVM's FMA operation, selecting "llvm.fma.f32" for floats or "llvm.fma.f64" for doubles based on type `T`. It takes three `T` arguments (x, y, z) and returns `T`, computing $ x \cdot y + z $—perfect for Horner's nesting. This results in the following assembly with 5 instructions and 3 fused-multiply-adds.
+The Terra intrinsic declaration maps directly to LLVM's FMA operation, selecting `llvm.fma.f32` for floats or `llvm.fma.f64` for doubles based on type `T`. It takes three `T` arguments (x, y, z) and returns `T`, computing $ x \cdot y + z $—perfect for Horner's nesting. This results in the following assembly with 5 instructions and 3 fused-multiply-adds.
 ```
 assembly for function at address 0x736c9cc8a000
 0x736c9cc8a000(+0):             vmovsd  xmm1, qword ptr [rdi + 24]
@@ -62,555 +146,21 @@ assembly for function at address 0x736c9cc8a000
 0x736c9cc8a011(+17):            vfmadd213sd     xmm0, xmm1, qword ptr [rdi]
 0x736c9cc8a016(+22):            ret
 ```
+</details>
 
-## Example
 
 
-```terra file=./tutorials/tutorial-resource-management/tutorial-lambda.t start=lambda_new_start end=lambda_new_end
+## Implementing Compiler Features as Libraries
+Multistage programming empowers users to implement language extensions—typically reserved for compiler developers—as simple Lua libraries. This capability stems from Terra's design: Lua serves as a staging language to generate and specialize Terra code dynamically at compile time. Features like lambdas, generics, or custom optimizations can be built modularly without altering the core compiler, enabling rapid prototyping, better portability, and user-defined DSLs. This library-based approach democratizes language design, shifting complexity from monolithic compilers to reusable modules, and reduces overhead by generating efficient, specialized code on-the-fly.
+
+<details>
+  <summary>Example: Implementing Lambdas as a Library in Terra </summary>
+
+In traditional languages, lambdas (anonymous functions with captures) require compiler support for closure creation, variable capturing, and invocation. In Terra, multistage programming allows this to be implemented concisely as a Lua library using macros and structs. The following code creates function objects that wrap a Terra function, capture variables in a struct, and overload the apply metamethod for invocation. It's only a few lines, demonstrating the power of multistage programming to implement compiler features.
+
+```terra file=./tutorials/tutorial-resource-management/liblambda.t start=lambda_new_start end=lambda_new_end
 ```
-
-
-Like C/C++, Terra is a  **statically-typed**, **compiled language** with manual memory management. 
-But unlike C/C++, it is designed from the beginning to be **meta-programmed from Lua**. 
-
-The design of Terra comes from the realization that C/C++ is really composed of multiple "languages." It has a core language of operators, control-flow, and functions calls, but surrounding this language is a meta-language composed of a mix of features such as the pre-processor, templating system, and struct definitions. Templates alone are Turing-complete and have been used to produce optimized libraries such as [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page), but are horrible to use in practice. 
-
-In Terra, we just gave in to the trend of making the meta-language of C/C++ more powerful and replaced it with a real programming language, Lua. 
-
-The combination of a low-level language meta-programmed by a high-level scripting language allows many behaviors that are not possible in other systems. Unlike C/C++, Terra code can be JIT-compiled and run interleaved with Lua evaluation, making it easy to write software libraries that depend on runtime code generation. 
-
-Features of other languages such as conditional compilation and templating simply fall out of the combination of using Lua to meta-program Terra:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<CodeColumns>
-  <CodeColumn title="Terra">
-    ```terra
-    terra add(a : int,b : int) : int
-        return a + b
-    end
-    ```
-  </CodeColumn> 
-  <CodeColumn title="C++"> 
-    ```cpp
-    int add(int a, int b) {
-        return a + b;
-    }
-    ``` 
-  </CodeColumn> 
-</CodeColumns>
-Conditional compilation is done with control-flow that determines what code is defined.
-<CodeColumns>
-  <CodeColumn>
-    ```terra
-    if iswindows() then
-        terra waitatend()
-            C.getchar()
-        end
-    else
-        terra waitatend() end
-    end
-    ```
-  </CodeColumn> 
-  <CodeColumn> 
-    ```cpp
-    #ifdef _WIN32
-        void waitatend() { 
-            getchar(); 
-        }
-    #else
-        void waitatend() {}
-    #endif
-    ``` 
-  </CodeColumn> 
-</CodeColumns>
-Templates become Lua functions that take a terra type T and use it to generate new types and code.
-<CodeColumns>
-  <CodeColumn>
-    ```terra
-    function Array(T)
-        struct Array {
-            N : int
-            data : &T
-        }
-        terra Array:get(i : int)
-            return self.data[i]
-        end
-        return Array
-    end
-
-    FloatArray = Array(float)
-    ```
-  </CodeColumn> 
-  <CodeColumn> 
-    ```cpp
-    template<class T>
-    struct Array {
-        int N;
-        T* data;
-
-        T get(int i) {
-            return data[i];
-        }
-
-    };
-    
-    typedef Array<float> FloatArray;
-    ``` 
-  </CodeColumn> 
-</CodeColumns>
-
-## How can you use Terra?
-Terra is a statically-typed, compiled language that interoperates seamlessly with Lua. In this setup, Lua acts as the high-level meta-programming layer, while Terra handles the low-level, performance-critical code. The two languages share a lexical environment, meaning Terra code is written within Lua programs, and Lua can dynamically generate and manipulate Terra code at runtime. You can use Terra and Lua in the followind way ...
-
-### An embedded JIT-compiler for building languages
-We use techniques from [multi-stage programming](https://en.wikipedia.org/wiki/Multi-stage_programming) to make it possible to  [meta-program](#generative-programming) Terra using Lua.  Terra expressions, types, and functions are all first-class Lua values, making it possible to generate arbitrary programs at runtime. This allows you to [compile domain-specific languages](#compiling-a-language) (DSLs) written in Lua into high-performance Terra code. Furthermore, since Terra is built on the Lua ecosystem, it is easy to [embed](#embedding-and-interoperability) Terra-Lua programs in other software as a library. This design allows you to add a JIT-compiler into your existing software. You can use it to add a JIT-compiled DSL to your application, or to auto-tune high-performance code dynamically.
-
-### A scripting-language with high-performance extensions 
-While the performance of Lua and other dynamic languages is always getting better, a low-level of abstraction gives you predictable control of performance when you need it. Terra programs use the same LLVM backend that Apple uses for its C compilers. This means that Terra code performs similarly to equivalent C code. Terra also includes built-in support for SIMD operations, and other low-level features like non-temporal writes and prefetches. You can use Lua to organize and configure your application, and then call into Terra code when you need controllable performance.
-
-### A stand-alone low-level language 
-Terra was designed so that it can run independently from Lua. In fact, if your final program doesn't need Lua, you can save Terra code into a .o file or executable. In addition to ensuring a clean separation between high- and low-level code, this design lets you use Terra as a stand-alone low-level language. In this use-case, Lua serves as a powerful meta-programming language.  Here it serves as a replacement for C++ [template metaprogramming](https://en.wikipedia.org/wiki/Template_metaprogramming) or C preprocessor [X-Macros](https://en.wikipedia.org/wiki/X_macro) with better syntax and nicer properties such as [hygiene](https://en.wikipedia.org/wiki/Hygienic_macro). Since Terra exists *only* as code embedded in a Lua meta-program, features that are normally built into low-level languages can be implemented as Lua libraries. This design keeps the core of Terra simple, while enabling powerful behavior such as conditional compilation, namespaces, templating, and even **class systems** **[implemented as libraries](#simplicity)**.
-
-
-## Generative Programming {#generative-programming}
-Terra entities such as functions, types, variables and expressions are first-class Lua values --- they can be stored in Lua variables and passed to or returned from Lua functions. Using constructs from multi-stage programming[<sup>2</sup>](#footnote2), you can write Lua code to programmatically generate arbitrary Terra code. 
-
-### Multi-stage operators ###
-Inside Terra code, you can use an _escape_ operator (`[]`) to splice the result of a Lua expression into the Terra code:
-
-```terra
-local a = 5
-terra sin5()
-    return [ math.sin(a) ]
-end
+By loading this small library you can define and use lambda's as follows:
+```terra file=./tutorials/tutorial-resource-management/tutorial-lambda.t start=tutorial_lambda_start end=tutorial_lambda_end
 ```
-
-An escape is evaluated when a Terra function is _compiled_, and the result is spliced into the Terra code. In this example, this means that `math.sin(5)` will be evaluated _once_ and the code that implements the Terra function will return a constant. This can be verified by printing out the compiled version of the `sin5` function:
-
-```terra
---output a prettified representation of what this function does
-sin5:printpretty() 
--- output:
--- sin50 = terra() : {double}
---     return -0.95892427466314
--- end
-```
-Escapes can also return other Terra entities such as a function: 
-```terra
-add4 = terra(a : int) return a + 4 end
-
-terra example()
-    return [add4](3) -- 7
-end
-```
-In this case, Terra will insert a call to the Terra function stored in the `add4` variable:
-```terra
-example:printpretty()
--- output:
--- example4 = terra() : {int32}
---     return <extract0> #add43(3)#
--- end
-```
-In fact, _any_ name used in Terra code such as `add4` or `foo.bar` is treated as if it were escaped by default.
-
-Inside an escape, you can refer to variables defined in Terra:
-```terra
---a function to be called inside an escape
-function choosesecond(a,b)
-    -- prints false, 'a' is not a number:
-    print(a == 1) 
-    -- prints true, 'a' is a Terra symbol:
-    print(terralib.issymbol(a))
-    return b
-end
-
-terra example(input : int)
-    var a = input
-    var b = input+1
-    --create an escape that refers to 'a' and 'b'
-    return [ choosesecond(a,b) ] --returns the value of b
-end
-example(1) --returns 2
-```
-
-Since escapes are evaluated before a Terra function is compiled, variables `a` and `b` will not have concrete integer values inside the escape. Instead, inside the Lua code `a` and `b` are Terra _symbols_ that represent references to Terra values. Since `choosesecond` returns the symbol `b`, the `example` function will return the value of Terra variable `b` when called.
-
-The _quotation_ operator (a backtick) allows you to generate Terra statements and expression in Lua. They can then be spliced into Terra code using the escape operator.
-```terra
-function addtwo(a,b)
-    return `a + b
-end
-terra example(input : int)
-    var a = input
-    var b = input+1
-    return [ addtwo(a,b) ]
-end
-example(1) -- returns 3
-```
-To generate statements rather than expressions you can use the `quote` operator:
-```terra
-local printtwice = quote
-    C.printf("hello\n")
-    C.printf("hello\n")
-end
-terra print4()
-    [printtwice]
-    [printtwice]
-end
-```
-
----
-
-### Compiling-a-language {#compiling-a-language}
-
-With these two operators, you can use Lua to generate _arbitrary_ Terra code at compile-time. This makes the combination of Lua/Terra well suited for writing compilers for high-performance domain-specific languages. For instance, we can implement a _compiler_ for [BF](http://en.wikipedia.org/wiki/Brainfuck), a minimal language that emulates a Turing machine. The Lua function `compile` will take a string of BF code, and a maximum tape size `N`. It then generates a Terra function that implements the BF code. Here is a skeleton that sets up the BF program:
-
-```terra
-local function compile(code,N)
-    local function body(data,ptr)
-        --<<implementation of body>>
-    end
-    return terra()
-        --an array to hold the tape
-        var data : int[N]
-        --clear the tape initially
-        for i = 0, N do
-            data[i] = 0
-        end
-        var ptr = 0
-        --generate the code for the body
-        [ body(data,ptr) ]
-    end
-end
-```
-
-The function `body` is responsible for generating body of the BF program given the code string:
-```terra
-local function body(data,ptr)
-    --the list of terra statements that make up the BF program
-    local stmts = terralib.newlist()
-
-    --loop over each character in the BF code
-    for i = 1,#code do
-        local c = code:sub(i,i)
-        local stmt
-        --generate the corresponding Terra statement
-        --for each BF operator
-        if c == ">" then
-            stmt = quote ptr = ptr + 1 end
-        elseif c == "<" then
-            stmt = quote ptr = ptr - 1 end
-        elseif c == "+" then
-            stmt = quote data[ptr] = data[ptr] + 1 end
-        elseif c == "-" then
-            stmt = quote data[ptr] = data[ptr] - 1 end
-        elseif c == "." then
-            stmt = quote C.putchar(data[ptr]) end
-        elseif c == "," then
-            stmt = quote data[ptr] = C.getchar() end
-        elseif c == "[" then
-            error("Implemented below")
-        elseif c == "]" then
-            error("Implemented below")
-        else
-            error("unknown character "..c)
-        end
-        stmts:insert(stmt)
-    end
-    return stmts
-end
-```
-It loops over the code string, and generates the corresponding Terra code for each character of BF (e.g. ">" shifts the tape over by 1 and is implemented by the Terra code `ptr = ptr + 1`). We can now compile a BF function:
-```terra
-add3 = compile(",+++.")
-```
-The result, `add3`, is a Terra function that adds3 to an input character and then prints it out:
-```terra
-add3:printpretty()
--- bf_t_46_1 = terra() : {}
--- var data : int32[256]
--- ...
--- var ptr : int32 = 0
--- data[ptr] = <extract0> #getchar()#
--- data[ptr] = data[ptr] + 1
--- data[ptr] = data[ptr] + 1
--- data[ptr] = data[ptr] + 1
--- <extract0> #putchar(data[ptr])#
--- end
-```
-
-We can also use `goto` statements (`goto labelname`) and labels (`::labelname::`) to implement BF's looping construct:
-```terra
-local function body(data,ptr)
-    local stmts = terralib.newlist()
-    
-    --add a stack to keep track of the beginning of each loop
-    local jumpstack = {}
-    
-    for i = 1,#code do
-        local c = code:sub(i,i)
-        local stmt
-        --generate the corresponding Terra statement
-        --for each BF operator
-        if c == ">" then
-            stmt = quote ptr = ptr + 1 end
-        elseif c == "<" then
-            -- ...
-            -- handle '+', etc
-            -- ...
-        elseif c == "[" then
-            --generate labels to represent the beginning 
-            --and ending of the loop
-            --the 'symbol' function generates a globally unique
-            --name for the label
-            local target = { before = symbol(), after = symbol() }
-            table.insert(jumpstack,target)
-            stmt = quote 
-                --label for beginning of the loop
-                ::[target.before]:: 
-                if data[ptr] == 0 then
-                    goto [target.after] --exit the loop
-                end
-            end
-        elseif c == "]" then
-            --retrieve the labels that match this loop
-            local target = table.remove(jumpstack)
-            assert(target)
-            stmt = quote 
-                goto [target.before] --loop back edge
-                :: [target.after] :: --label for end of the loop
-            end
-        else
-            error("unknown character "..c)
-        end
-        stmts:insert(stmt)
-    end
-    return stmts
-end
-```
-
-We are using these generative programming constructs to implement domain-specific languages and auto-tuners: check out our [PLDI paper](/publications.html) that describes our implementation of Orion, a language for image processing kernels, and [Ebb](http://ebblang.org/), which is a DSL for solving mesh-based PDE's in Terra.
-
-
-## Embedding-and-interoperability {#embedding-and-interoperability}
-Programming languages don't exist in a vacuum, and the generative programming features of Terra can be useful even in projects that are primarily implemented in other programming languages. We make it possible to integrate Terra with other projects so you can use it to generate low-level code, while keeping most of your project in a well-established language. 
-
-First, we make it possible to pass values between Lua and Terra. Our implementation is built on top of LuaJIT's [foreign fuction interface](http://luajit.org/ext_ffi_tutorial.html). You can call Terra functions directly from Lua (or vice-versa), and access Terra objects directly from Lua (more details in the [API reference](/api.html#converting-between-lua-values-and-terra-values)).
-
-Furthermore, Lua-Terra is backwards compatible with both pure Lua and C, which makes it easy to use preexisting code. In Lua-Terra, you can use `require` or `loadfile` and it will treat the file as a Lua program (use `terralib.loadfile` to load a combined Lua-Terra file). You can use `terralib.includec` to import C functions from already existing header files.
-
-Finally, Lua-Terra can also be _embedded_ in pre-existing applications by linking the application against `libterra.a` and using Terra's C API. The interface is very similar to that of the [Lua interpreter](http://queue.acm.org/detail.cfm?id=1983083). A simple example initializes Terra and then runs code from the file specified in each argument:
-
-```cpp
-#include <stdio.h>
-#include "terra.h"
-
-int main(int argc, char ** argv) {
-    lua_State * L = luaL_newstate(); //create a plain lua state
-    luaL_openlibs(L);                //initialize its libraries
-    //initialize the terra state in lua
-    terra_init(L);
-    for(int i = 1; i < argc; i++)
-        //run the terra code in each file
-        if(terra_dofile(L,argv[i]))  
-            exit(1);
-    return 0;
-}
-```
-
-## Simplicity {#simplicity}
-The combination of a simple low-level language with a simple dynamic programming language means that many built-in features of statically-typed low-level languages can be implemented as libraries in the dynamic language. Here are just a few examples:
-
-### Conditional Compilation ###
-Normally conditional compilation is accomplished using preprocessor directives (e.g., `#ifdef`), or custom build systems. Using Lua-Terra, we can write Lua code to decide how to construct a Terra function. Since Lua is a full programming language, it can do things that most preprocessors cannot, such as call external programs. In this example, we conditionally compile a Terra function differently on OSX and Linux by first calling `uname` to discover the operating system, and then using an `if` statement to instantiate a different version of the Terra function depending on the result: 
-
-```terra
---run uname to figure out what OS we are running
-local uname = io.popen("uname","r"):read("*a")
-local C = terralib.includec("stdio.h")
-
-if uname == "Darwin\n" then
-    terra reportos()
-        C.printf("this is osx\n")
-    end
-elseif uname == "Linux\n" then
-    terra reportos()
-        C.printf("this is linux\n")
-    end
-else
-    error("OS Unknown")
-end
-
---conditionally compiled to 
---the right version for this os
-reportos()
-```
-
----
-
-### Namespaces ###
-
-Statically-typed languages normally need constructs that specifically deal with the problem of namespaces (e.g., C++'s `namespace` keyword, or Java's `import` constructs). For Terra, we just use Lua's first-class tables as way to organize functions. When you use any "name" such as `myfunctions.add` inside a Terra function, the Terra will resolve it at _compile time_ to the Terra value it holds. Here is an example of placing a Terra function inside a Lua table, and then calling it from another Terra function:
-
-```terra
-local myfunctions = {}
--- terra functions are first-class Lua values
-
--- they can be stored in Lua tables
-terra myfunctions.add(a : int, b : int) : int
-    return a + b
-end
-
--- and called from the tables as well
-terra myfunctions.add3(a : int)
-    return myfunctions.add(a,3)
-end
-
---the declaration of myfunctions.add is just syntax sugar for:
-
-myfunctions["add"] = terra(a : int, b : int) : int
-    return a + b
-end
-
-print(myfunctions.add3(4))
-```
-
-In fact, you've already seen this behavior when we imported C functions:
-
-```terra
-C = terralib.includec("stdio.h")
-```
-
-The function `includec` just returns a Lua table (`C`) that contains the C functions. Since `C` is a Lua table, you can iterate through it if you want:
-
-```terra
-for k,v in pairs(C) do
-    print(k,v)
-end
-
--- seek         <terra function>
--- asprintf     <terra function>
--- gets         <terra function>
--- size_t       uint64
--- ...
-```
----
-
-### Templating ###
-
-Since Terra types and functions are first class values, you can get functionality similar to a C++ template by simply creating a Terra type and defining a Terra function _inside_ of a Lua function. Here is an example where we define the Lua function `MakeArray(T)` which takes a Terra type `T` and generates an `Array` object that can hold multiple `T` objects (i.e. a simple version of C++'s `std::vector`).
-
-```terra 
-C = terralib.includec("stdlib.h")
-function MakeArray(T)
-    --create a new Struct type that contains a pointer 
-    --to a list of T's and a size N
-    local struct ArrayT {
-        --&T is a pointer to T
-        data : &T;
-        N : int;
-    } 
-    --add some methods to the type
-    terra ArrayT:init(N : int)
-        -- the syntax [&T](...) is a cast,
-        -- the C equivalent is (T*)(...)
-        self.data = [&T](C.malloc(sizeof(T)*N))
-        self.N = N
-    end
-    terra ArrayT:get(i : int)
-        return self.data[i]
-    end
-    terra ArrayT:set(i : int, v : T)
-        self.data[i] = v
-    end
-    --return the type as a 
-    return ArrayT
-end
-
-IntArray = MakeArray(int)
-DoubleArray = MakeArray(double)
-
-terra UseArrays()
-    var ia : IntArray
-    var da : DoubleArray
-    ia:init(1) 
-    da:init(1)
-    ia:set(0,3)
-    da:set(0,4.5)
-    return ia:get(0) + da:get(0)
-end
-```
-
-As shown in this example, Terra allows you to define methods on `struct` types.
-Unlike other statically-typed languages with classes, there are no built-in mechanisms for inheritance or runtime polymorphism.
-Methods declarations are just a syntax sugar that associates table of Lua methods with each type. Here the `get` method is equivalent to:
-
-```terra
-ArrayT.methods.get = terra(self : &T, i : int)
-    return self.data[i]
-end
-```
-
-The object `ArrayT.methods` is a Lua table that holds the methods for type `ArrayT`.
-
-Similarly an invocation such as `ia:get(0)` is equivalent to `T.methods.get(&ia,0)`.
-
----
-
-### Specialization ###
-    
-By nesting a Terra function inside a Lua function, you can compile different versions of a function. Here we generate different versions
-of the power function (e.g. pow2, or pow3):
-
-```terra
---generate a power function for a specific N (e.g. N = 3)
-function makePowN(N)
-    local function emit(a,N)
-        if N == 0 then return 1
-        else return `a*[emit(a,N-1)]
-        end
-    end
-    return terra(a : double)
-        return [emit(a,N)]
-    end
-end
-
---use it to fill in a table of functions
-local mymath = {}
-for n = 1,10 do
-    mymath["pow"..n] = makePowN(n)
-end
-print(mymath.pow3(2)) -- 8
-```
----
-
-
-### Class Systems ###
-
-As shown in the templating example, Terra allows you to define methods on `struct` types but does not provide any built-in mechanism for inheritance or polymorphism. Instead, normal class systems can be written as libraries.  For instance, a user might write:
-```terra
-J = terralib.require("lib/javalike")
-Drawable = J.interface { draw = {} -> {} }
-struct Square { length : int; }
-J.extends(Square,Shape)
-J.implements(Square,Drawable)
-terra Square:draw() : {}
-    --draw implementation
-end
-```
-The functions `J.extends` and `J.implements` are Lua functions that generate the appropriate Terra code to implement a class system. More information is available in our [PLDI Paper](/publications.html). The file [lib/javalike.t](https://github.com/terralang/terra/blob/master/tests/lib/javalike.t) has one possible implementation of a Java-like class system, while the file [lib/golike.t](https://github.com/terralang/terra/blob/master/tests/lib/golike.t) is more similar to Google's Go language.
+</details>
