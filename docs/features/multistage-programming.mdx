@@ -5,49 +5,70 @@ title: Multistage programming
 
 import { CodeColumns, CodeColumn } from '../../src/components/CodeColumns';
 
-# Multistage programming
-__Terra__ is a low-level system programming language that is embedded in and meta-programmed by the __Lua__ programming language:
-```terra
---This top-level code is plain Lua code.
-function printhello()
-    -- This is a plain Lua function
-    print("Hello, Lua!")
-end
-printhello()
+# Multistage programming in Terra
+Multistage programming is a cornerstone of Terra's design, enabling developers to write code that generates and specializes other code at runtime or compile-time. By treating Terra's functions, types, variables, and expressions as first-class values in Lua, multistage programming allows for dynamic code construction, optimization, and specialization. This paradigm, rooted in the interplay between Lua's flexibility and Terra's high-performance compilation, empowers developers to create efficient, adaptive programs with minimal boilerplate.
 
--- Terra is backwards compatible with C, we'll use C's io library in our example.
-C = terralib.includec("stdio.h")
+## Dynamic Code Generation
+Multistage programming allows Terra to generate code dynamically, tailoring it to specific use cases. For example, you can create functions optimized for particular input sizes, hardware targets, or performance constraints. This is particularly powerful for tasks like loop unrolling, constant folding, or generating SIMD-optimized routines, all driven by Lua's logic.
 
--- The keyword 'terra' introduces a new Terra function.
-terra hello(argc : int, argv : &rawstring)
-    -- Here we call a C function from Terra
-    C.printf("Hello, Terra!\n")
-    return 0
-end
 
--- You can call Terra functions directly from Lua, they are JIT compiled 
--- using LLVM to create machine code
-hello(0,nil)
+### Example: loop unrolling in polynomial evaluation
+We explore loop unrolling in Terra for evaluating a cubic polynomial $ p(x) = a + b \cdot x + c \cdot x^2 + d \cdot x^3 $, where coefficients ae stored in a struct array (`coeffs[0] = a`, `coeffs[1] = b`,  `coeffs[2] = c`,  `coeffs[3] = d`.). Horner's method rewrites the polynomial as $ a + x \cdot (b + x \cdot (c + x \cdot d)) $ to minimize multiplications and additions, improving numerical stability and performance.
 
--- Terra functions are first-class values in Lua, and can be introspected 
--- and meta-programmed using it
-hello:disas()
---[[ output:
-    assembly for function at address 0x60e6010
-    0x60e6010(+0):		push	rax
-    0x60e6011(+1):		movabs	rdi, 102129664
-    0x60e601b(+11):		movabs	rax, 140735712154681
-    0x60e6025(+21):		call	rax
-    0x60e6027(+23):		xor	eax, eax
-    0x60e6029(+25):		pop	rdx
-    0x60e602a(+26):		ret
-]]
+Terra's metaprogramming capabilities allow us to unroll loops at compile time, generating explicit, optimized code without runtime overhead. The following code defines a generic, templated Polynomial evaluator supporting float or double types. It uses loop unrolling in the eval method to produce efficient, branch-free code.
 
--- You can save Terra code as executables, object files, or shared libraries 
--- and link them into existing programs
-terralib.saveobj("helloterra",{ main = hello })
+```terra file=./tutorials/tutorial-resource-management/tutorial-poly-standard.t start=poly_start end=poly_end
 ```
-Try this example and others in your browser via [Replit](https://replit.com/@terralang/terra).
+To create a cubic polynomial type with float coefficients:
+```terra 
+local poly = Polynomial(float, 4) -- Generates and caches the type
+```
+Inspect the unrolled eval method using `:printpretty()` to see the expanded Terra code:
+```
+tutorial-poly.t:31:     terra poly.eval(self : &poly,x : float) : float
+tutorial-poly.t:32:         var y : float = [&float]((@self).coeffs)[3] -- c
+tutorial-poly.t:36:         y = x * y + [&float]((@self).coeffs)[2]     -- x*d + c
+tutorial-poly.t:36:         y = x * y + [&float]((@self).coeffs)[1]     -- x*(x*d + c) + b
+tutorial-poly.t:36:         y = x * y + [&float]((@self).coeffs)[0]     -- x*(x*(x*d + c) + b) + a
+tutorial-poly.t:40:         return y
+tutorial-poly.t:31:     end
+```
+This shows the loop fully unrolled into sequential multiply-adds, ready for further optimization by the compiler.
+
+View the generated assembly with `:disas()` (with -O2 on an AMD):
+```
+assembly for function at address 0x722b5a3bb000
+0x722b5a3bb000(+0):             vmulsd  xmm1, xmm0, qword ptr [rdi + 24]
+0x722b5a3bb005(+5):             vaddsd  xmm1, xmm1, qword ptr [rdi + 16]
+0x722b5a3bb00a(+10):            vmulsd  xmm1, xmm1, xmm0
+0x722b5a3bb00e(+14):            vaddsd  xmm1, xmm1, qword ptr [rdi + 8]
+0x722b5a3bb013(+19):            vmulsd  xmm0, xmm1, xmm0
+0x722b5a3bb017(+23):            vaddsd  xmm0, xmm0, qword ptr [rdi]
+0x722b5a3bb01b(+27):            ret
+```
+This code is already quite efficient with 7 instructions (3 multiplies, 3 adds, 1 return) and 3 registers (an input/output register `xmm0`, a register `xmm1` to hold a temporary, and a general purpose register `rdi` to point to the coefficient array). 
+
+
+We can further optimize the code by fusing the addition and multiplication into one operation. Here's the optimized code integrated into the Polynomial factory (replace the original eval method and add the intrinsic definition):
+```terra file=./tutorials/tutorial-resource-management/tutorial-poly-optimized.t start=polyeval_start end=polyeval_end
+```
+
+The Terra intrinsic declaration maps directly to LLVM's FMA operation, selecting "llvm.fma.f32" for floats or "llvm.fma.f64" for doubles based on type `T`. It takes three `T` arguments (x, y, z) and returns `T`, computing $ x \cdot y + z $—perfect for Horner's nesting. This results in the following assembly with 5 instructions and 3 fused-multiply-adds.
+```
+assembly for function at address 0x736c9cc8a000
+0x736c9cc8a000(+0):             vmovsd  xmm1, qword ptr [rdi + 24]
+0x736c9cc8a005(+5):             vfmadd213sd     xmm1, xmm0, qword ptr [rdi + 16]
+0x736c9cc8a00b(+11):            vfmadd213sd     xmm1, xmm0, qword ptr [rdi + 8]
+0x736c9cc8a011(+17):            vfmadd213sd     xmm0, xmm1, qword ptr [rdi]
+0x736c9cc8a016(+22):            ret
+```
+
+## Example
+
+
+```terra file=./tutorials/tutorial-resource-management/tutorial-lambda.t start=lambda_new_start end=lambda_new_end
+```
+
 
 Like C/C++, Terra is a  **statically-typed**, **compiled language** with manual memory management. 
 But unlike C/C++, it is designed from the beginning to be **meta-programmed from Lua**. 
@@ -59,6 +80,22 @@ In Terra, we just gave in to the trend of making the meta-language of C/C++ more
 The combination of a low-level language meta-programmed by a high-level scripting language allows many behaviors that are not possible in other systems. Unlike C/C++, Terra code can be JIT-compiled and run interleaved with Lua evaluation, making it easy to write software libraries that depend on runtime code generation. 
 
 Features of other languages such as conditional compilation and templating simply fall out of the combination of using Lua to meta-program Terra:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 <CodeColumns>
   <CodeColumn title="Terra">
