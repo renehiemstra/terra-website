@@ -6,12 +6,16 @@ title: Multistage programming
 import { CodeColumns, CodeColumn } from '../../src/components/CodeColumns';
 
 # Multistage programming in Terra
-Multistage programming is a cornerstone of Terra's design, enabling developers to write code that generates and specializes other code at compile-time. By treating Terra's functions, types, variables, and expressions as first-class values in Lua, multistage programming allows for dynamic code construction, optimization, and specialization. This paradigm, rooted in the interplay between Lua's flexibility and Terra's high-performance compilation, empowers developers to create efficient, adaptive programs with minimal boilerplate.
+Multistage programming lies at the heart of Terra's design, empowering developers to create code that dynamically generates and specializes other code at compile time. By elevating Terra's functions, types, variables, and expressions to first-class citizens within Lua, this approach facilitates seamless code construction, optimization, and adaptation.
+
+Since Terra operates exclusively as code embedded within a Lua metaprogram, features traditionally hardcoded into low-level languages can instead be crafted as Lua libraries. This architecture maintains a lean core for Terra while unlocking robust capabilities, such as conditional compilation, namespaces, templating, and even class systems—all realized through libraries.
+
+Rooted in the synergy between Lua's expressive flexibility and Terra's high-performance compilation, this paradigm enables developers to build efficient, adaptable programs with remarkably little boilerplate.
 
 ## Dynamic Code Generation
 The design of Terra stems from the insight that C/C++ effectively comprises multiple "languages": a core language of operators, control flow, and function calls, surrounded by a fragmented meta-language including the preprocessor, templating system, and struct definitions. While C++ templates are Turing-complete and have enabled optimized libraries like Eigen, they are notoriously cumbersome in practice.
 
-Terra embraces and extends this trend by replacing C/C++'s ad-hoc meta-language with a full-fledged programming language: Lua. This pairing of a low-level systems language with a high-level scripting language unlocks capabilities beyond traditional systems. Unlike C/C++, Terra code can be JIT-compiled and executed interleaved with Lua, simplifying the creation of libraries that rely on runtime code generation.
+Terra embraces and extends this approach by replacing C/C++'s ad-hoc meta-language with a full-fledged programming language: Lua. This pairing of a low-level systems language with a high-level scripting language unlocks capabilities beyond traditional systems. Unlike C/C++, Terra code can be JIT-compiled and executed interleaved with Lua, simplifying the creation of libraries that rely on runtime code generation.
 
 As a result, features from other languages—such as conditional compilation and templating—emerge organically from Lua's metaprogramming of Terra. For example, templated types, akin to C++ templates but far more flexible, arise through Lua's dynamic code generation, supporting parameterized structs and functions without rigid syntax. Arbitrary compile-time computations, like producing optimized kernels based on runtime parameters or domain-specific abstractions, become simple Lua scripts that seamlessly integrate high-performance Terra code with expressive metaprogramming.
 
@@ -45,6 +49,56 @@ Conditional compilation is done with control-flow that determines what code is d
     ``` 
   </CodeColumn> 
 </CodeColumns>
+</details>
+
+
+<details>
+  <summary>Example: Namespaces</summary>
+
+Statically-typed languages normally need constructs that specifically deal with the problem of namespaces (e.g., C++'s `namespace` keyword, or Java's `import` constructs). For Terra, we just use Lua's first-class tables as way to organize functions. When you use any "name" such as `myfunctions.add` inside a Terra function, the Terra will resolve it at _compile time_ to the Terra value it holds. Here is an example of placing a Terra function inside a Lua table, and then calling it from another Terra function:
+
+```terra
+local myfunctions = {}
+-- terra functions are first-class Lua values
+
+-- they can be stored in Lua tables
+terra myfunctions.add(a : int, b : int) : int
+    return a + b
+end
+
+-- and called from the tables as well
+terra myfunctions.add3(a : int)
+    return myfunctions.add(a,3)
+end
+
+--the declaration of myfunctions.add is just syntax sugar for:
+
+myfunctions["add"] = terra(a : int, b : int) : int
+    return a + b
+end
+
+print(myfunctions.add3(4))
+```
+
+In fact, you've already seen this behavior when we imported C functions:
+
+```terra
+C = terralib.includec("stdio.h")
+```
+
+The function `includec` just returns a Lua table (`C`) that contains the C functions. Since `C` is a Lua table, you can iterate through it if you want:
+
+```terra
+for k,v in pairs(C) do
+    print(k,v)
+end
+
+-- seek         <terra function>
+-- asprintf     <terra function>
+-- gets         <terra function>
+-- size_t       uint64
+-- ...
+```
 </details>
 
 <details>
@@ -151,7 +205,7 @@ assembly for function at address 0x736c9cc8a000
 
 
 ## Implementing Compiler Features as Libraries
-Multistage programming empowers users to implement language extensions—typically reserved for compiler developers—as simple Lua libraries. This capability stems from Terra's design: Lua serves as a staging language to generate and specialize Terra code dynamically at compile time. Features like lambdas, generics, or custom optimizations can be built modularly without altering the core compiler, enabling rapid prototyping, better portability, and user-defined DSLs. This library-based approach democratizes language design, shifting complexity from monolithic compilers to reusable modules, and reduces overhead by generating efficient, specialized code on-the-fly.
+Multistage programming empowers users to implement language extensions—typically reserved for compiler developers—as simple Lua libraries. This capability stems from Terra's design: Lua serves as a staging language to generate and specialize Terra code dynamically at compile time. Features like lambdas, generics, or custom optimizations can be built modularly without altering the core compiler, enabling rapid prototyping, better portability, and user-defined DSLs. It's even possible to extend Terra's parser from outside the language by adding new keywords with associated logic in a library. This library-based approach democratizes language design, shifting complexity from monolithic compilers to reusable modules, and reduces overhead by generating efficient, specialized code on-the-fly.
 
 <details>
   <summary>Example: Implementing Lambdas as a Library in Terra </summary>
@@ -165,10 +219,33 @@ By loading this small library you can define and use lambda's as follows:
 ```
 </details>
 
+<details>
+  <summary>Example: Implementing Run-Time Type Information (RTTI) as a Library in Terra </summary>
+
+In C++, Run-Time Type Information (RTTI) is a built-in language feature implemented in the compiler for dynamic type checking and casting. In Terra, multistage programming allows RTTI to be implemented entirely as a Lua library outside the compiler, adding type IDs to structs and enabling dynamic casts with minimal code.
+
+RTTI provides run-time identification of object types, useful for dynamic casting or polymorphism. The library assigns unique IDs to types, inserts them as fields in structs, and offers functions for querying and casting—mirroring C++'s typeid and dynamic_cast but in a lightweight, user-extensible module.
+
+Implementing RTTI as a library benefits from modularity (easy updates without recompiling Terra), portability (no compiler dependencies), and customization (users can modify ID generation or add features). It leverages Lua's metaprogramming to insert fields and initializers dynamically, demonstrating how multistage programming shifts compiler-like features to libraries.
+
+```terra file=./tutorials/tutorial-resource-management/librtti.t start=rtti_start end=rtti_end
+```
+
+The following test demonstrates dynamic casting: `f` identifies and prints the type of opaque pointers to `A` or `B` instances by performing a dynamic cast.
+```terra file=./tutorials/tutorial-resource-management/tutorial-rtti.t start=tutorial_rtti_start end=tutorial_rtti_end
+```
+</details>
+
 
 <details>
-  <summary>Example: Implementing Dynamic Interfaces in Terra </summary>
+  <summary>Example: Concept-Based Template Dispatch as a Library Extension </summary>
 
+Template dispatch selects the appropriate function overload at compile time based on argument types and constraints, improving type safety and expressiveness. Concepts define requirements on template parameters (e.g., Real for floating-point types, Integer for integers), ensuring only valid instantiations are allowed and providing clear error messages for mismatches.
 
+The new standard library implements templated overloading of functions and methods, with template constraints via concepts—mirroring C++20's capabilities but in a modular library. This library uses Terra's unique feature to extend the parser from outside the language with a new keyword, `terraform`, with the dispatch logic implemented in the library.
 
+Implementing this as a library offers key benefits: modularity (easy to update or replace), no core compiler modifications (faster iteration, better portability), and extensibility (users can add custom concepts or dispatch rules). It leverages Lua's metaprogramming to generate specialized code, reducing runtime overhead while keeping the language lightweight.
+
+```terra file=./tutorials/tutorial-resource-management/tutorial-concepts.t start=tutorial_terraform_start end=tutorial_terraform_end
+```
 </details>
