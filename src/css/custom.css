@@ -44,6 +44,8 @@
     --ifm-code-font-size: 15px;
     --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
     --ifm-codeblock-background: #fafafa;
+    --svg-background: #ffffff; /* White background for light mode */
+    --svg-foreground: #000000; /* Black components for light mode */
 }
 
 [data-theme='dark'] {
@@ -51,6 +53,14 @@
     --ifm-color-primary: #7495af;
     --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
     --ifm-codeblock-background: #2d2d2d;
+    --svg-background: transparent; /* Transparent background for dark mode */
+    --svg-foreground: #ffffff; /* White components for dark mode */
+}
+
+img[src$=".svg"] {
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
 .test-passed {

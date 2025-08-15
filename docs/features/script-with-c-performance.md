@@ -4,33 +4,13 @@ title: Script with C-performance
 ---
 
 # Script with C-performance
-
-Terra is a simple and expressive statically typed compiled language built on top of LuaJIT, the fastest JIT-compiler in the West. This unique combination allows Terra to deliver performance comparable to C while maintaining the flexibility and ease of a scripting language.
+Terra is a simple and expressive statically typed compiled language built on top of LuaJIT, a lightweight and performant JIT-compiler. This unique combination allows Terra to deliver performance comparable to C while maintaining the flexibility and ease of a scripting language.
 
 ## High Performance via LuaJIT
-
-Terra leverages LuaJIT’s powerful JIT (Just-In-Time) compilation capabilities, which use the same LLVM backend as Apple’s C compilers. This means Terra code achieves near-C performance—often within 5% of equivalent C code compiled with Clang, as demonstrated by benchmarks like `nbody` and `fannhakunen` from the [Programming Language Benchmark Game](http://benchmarksgame.alioth.debian.org). Here’s a simple example from Terra’s introduction:
-
+Terra leverages LuaJIT’s powerful JIT (Just-In-Time) compilation capabilities, which use the same LLVM backend as Apple’s C compilers. This means Terra code achieves near-C performance—often within 5% of equivalent C code compiled with Clang. Here’s a simple example:
 ```terra
--- Plain Lua code
-function printhello()
-    print("Hello, Lua!")
-end
-printhello()
-
--- Terra code JIT-compiled via LuaJIT
-C = terralib.includec("stdio.h")
-terra hello(argc : int, argv : &rawstring)
-    C.printf("Hello, Terra!\n")
-    return 0
-end
-hello(0, nil) -- JIT-compiled and executed
-
-
-
-__Terra__ is a low-level system programming language that is embedded in and meta-programmed by the __Lua__ programming language:
-```terra
---This top-level code is plain Lua code.
+-- __Terra__ is a low-level system programming language that is embedded in and meta-programmed by the __Lua__ programming language:
+-- This top-level code is plain Lua code.
 function printhello()
     -- This is a plain Lua function
     print("Hello, Lua!")
@@ -69,4 +49,7 @@ hello:disas()
 -- and link them into existing programs
 terralib.saveobj("helloterra",{ main = hello })
 ```
-Try this example and others in your browser via [Replit](https://replit.com/@terralang/terra).
+
+## Terra is Close to the Hardware
+Terra is designed to be a thin abstraction layer on modern processors. Terra provides much the same functionality as C, pointer arithmetic, and monomorphic functions. Global state is possible in the full language using global variables created with the global function. Additionally, Terra includes fixed-length vectors of basic types (e.g., `vector(float,4))` to reflect the presence of SIMD units on modern processors. Since the design of Terra is close to the hardware, users can more precisely express the execution behavior that they desire, and get predictable performance.
+

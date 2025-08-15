@@ -1,0 +1,30 @@
+# Terra-Regent: Task-based parallelism for distributed workloads
+
+Regent is a domain specific language for implicit task-based parallelism implemented as a language extension of Terra.
+
+Regent automatically discovers parallelism in programs composed of tasks, or functions. Tasks execute sequentially. Behind the scenes, Regent looks at the arguments to tasks, along with the ways tasks touch their arguments (read, write, etc.) to determine which tasks can execute in parallel. That means you can write code like this:
+```terra
+-- Launch a task with some data.
+a(data) -- writes data
+
+-- Launch three b tasks.
+-- Each data_part is a view onto a different piece of the original data.
+for i = 0, 3 do
+  task_b(data_part[i]) -- reads/writes the field x of data
+end
+
+-- Launch c task.
+c(data) -- reads/writes the field y of data
+
+-- Launch three d tasks.
+for i = 0, 3 do
+  d(data_part[i]) -- reads data
+end
+```
+And Regent will automatically discover that this parallelism is available:
+
+# My Page
+
+<div style={{textAlign: 'center'}}>
+  <img src="static/img/frontpage.svg" />
+</div>

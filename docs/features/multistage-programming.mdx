@@ -8,18 +8,14 @@ import { CodeColumns, CodeColumn } from '../../src/components/CodeColumns';
 # Multistage programming in Terra
 Multistage programming lies at the heart of Terra's design, empowering developers to create code that dynamically generates and specializes other code at compile time. By elevating Terra's functions, types, variables, and expressions to first-class citizens within Lua, this approach facilitates seamless code construction, optimization, and adaptation.
 
-Since Terra operates exclusively as code embedded within a Lua metaprogram, features traditionally hardcoded into low-level languages can instead be crafted as Lua libraries. This architecture maintains a lean core for Terra while unlocking robust capabilities, such as conditional compilation, namespaces, templating, and even class systems—all realized through libraries.
-
-Rooted in the synergy between Lua's expressive flexibility and Terra's high-performance compilation, this paradigm enables developers to build efficient, adaptable programs with remarkably little boilerplate.
-
-## Dynamic Code Generation
 The design of Terra stems from the insight that C/C++ effectively comprises multiple "languages": a core language of operators, control flow, and function calls, surrounded by a fragmented meta-language including the preprocessor, templating system, and struct definitions. While C++ templates are Turing-complete and have enabled optimized libraries like Eigen, they are notoriously cumbersome in practice.
 
 Terra embraces and extends this approach by replacing C/C++'s ad-hoc meta-language with a full-fledged programming language: Lua. This pairing of a low-level systems language with a high-level scripting language unlocks capabilities beyond traditional systems. Unlike C/C++, Terra code can be JIT-compiled and executed interleaved with Lua, simplifying the creation of libraries that rely on runtime code generation.
 
+## High-level Language Features 
 As a result, features from other languages—such as conditional compilation and templating—emerge organically from Lua's metaprogramming of Terra. For example, templated types, akin to C++ templates but far more flexible, arise through Lua's dynamic code generation, supporting parameterized structs and functions without rigid syntax. Arbitrary compile-time computations, like producing optimized kernels based on runtime parameters or domain-specific abstractions, become simple Lua scripts that seamlessly integrate high-performance Terra code with expressive metaprogramming.
 
-Multistage programming further empowers Terra to dynamically generate code tailored to specific scenarios, such as functions optimized for input sizes, hardware targets, or constraints. This is invaluable for tasks like loop unrolling, constant folding, or SIMD vectorization, all orchestrated via Lua for efficient, adaptive execution.
+
 
 <details>
   <summary>Example: Conditional compilation </summary>
@@ -49,6 +45,47 @@ Conditional compilation is done with control-flow that determines what code is d
     ``` 
   </CodeColumn> 
 </CodeColumns>
+</details>
+
+<details>
+  <summary>Example: Templated types</summary>
+
+Templates become Lua functions that take a terra type T and use it to generate new types and code.
+<CodeColumns>
+  <CodeColumn title="Terra">
+    ```terra
+    function Array(T)
+        struct Array {
+            N : int
+            data : &T
+        }
+        terra Array:get(i : int)
+            return self.data[i]
+        end
+        return Array
+    end
+
+    FloatArray = Array(float)
+    ```
+  </CodeColumn> 
+  <CodeColumn title="C++">
+    ```cpp
+    template<class T>
+    struct Array {
+        int N;
+        T* data;
+
+        T get(int i) {
+            return data[i];
+        }
+
+    };
+    
+    typedef Array<float> FloatArray;
+    ``` 
+  </CodeColumn> 
+</CodeColumns>
+
 </details>
 
 
@@ -101,46 +138,12 @@ end
 ```
 </details>
 
-<details>
-  <summary>Example: Templated types</summary>
 
-Templates become Lua functions that take a terra type T and use it to generate new types and code.
-<CodeColumns>
-  <CodeColumn title="Terra">
-    ```terra
-    function Array(T)
-        struct Array {
-            N : int
-            data : &T
-        }
-        terra Array:get(i : int)
-            return self.data[i]
-        end
-        return Array
-    end
 
-    FloatArray = Array(float)
-    ```
-  </CodeColumn> 
-  <CodeColumn title="C++">
-    ```cpp
-    template<class T>
-    struct Array {
-        int N;
-        T* data;
 
-        T get(int i) {
-            return data[i];
-        }
 
-    };
-    
-    typedef Array<float> FloatArray;
-    ``` 
-  </CodeColumn> 
-</CodeColumns>
-
-</details>
+## Dynamic Code Generation and Optimization
+Multistage programming further empowers Terra to dynamically generate code tailored to specific scenarios, such as functions optimized for input sizes, hardware targets, or constraints. This is invaluable for tasks like loop unrolling, constant folding, or SIMD vectorization, all orchestrated via Lua for efficient, adaptive execution.
 
 <details>
   <summary>Example: loop unrolling in polynomial evaluation</summary>
@@ -201,8 +204,6 @@ assembly for function at address 0x736c9cc8a000
 0x736c9cc8a016(+22):            ret
 ```
 </details>
-
-
 
 ## Implementing Compiler Features as Libraries
 Multistage programming empowers users to implement language extensions—typically reserved for compiler developers—as simple Lua libraries. This capability stems from Terra's design: Lua serves as a staging language to generate and specialize Terra code dynamically at compile time. Features like lambdas, generics, or custom optimizations can be built modularly without altering the core compiler, enabling rapid prototyping, better portability, and user-defined DSLs. It's even possible to extend Terra's parser from outside the language by adding new keywords with associated logic in a library. This library-based approach democratizes language design, shifting complexity from monolithic compilers to reusable modules, and reduces overhead by generating efficient, specialized code on-the-fly.
